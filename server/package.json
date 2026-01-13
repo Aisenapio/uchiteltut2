@@ -1,0 +1,35 @@
+{
+  "name": "uchiteltut2-server",
+  "version": "1.0.0",
+  "description": "Server for uchiteltut2 teacher employment portal",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node -r dotenv/config src/index.js",
+    "dev": "nodemon -r dotenv/config src/index.js",
+    "seed": "node -r dotenv/config src/seeds/seedData.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "graphql",
+    "apollo",
+    "mongoose",
+    "teacher",
+    "employment"
+  ],
+  "author": "uchiteltut2",
+  "license": "MIT",
+  "dependencies": {
+    "@apollo/server": "^5.2.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "graphql": "^16.8.1",
+    "graphql-tag": "^2.12.6",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
