@@ -149,20 +149,23 @@ const JobApplications = () => {
                         </p>
                         <p className="text-sm text-slate-500">{application.teacher?.email}</p>
                       </div>
-                      {application.teacher?.teacherDetails && (
+                      {application.teacher && (
                         <div className="text-sm text-slate-600 space-y-1">
                           <p>
                             <span className="font-medium">Образование:</span>{" "}
-                            {application.teacher.teacherDetails.education || "Не указано"}
+                            {application.teacher.education?.length > 0 ?
+                              application.teacher.education.map(edu =>
+                                edu.institution || edu.faculty || edu.level
+                              ).filter(Boolean).join(", ") : "Не указано"}
                           </p>
                           <p>
                             <span className="font-medium">Опыт:</span>{" "}
-                            {application.teacher.teacherDetails.experience ?
-                              `${application.teacher.teacherDetails.experience} лет` : "Не указано"}
+                            {application.teacher.experience ?
+                              `${application.teacher.experience} лет` : "Не указано"}
                           </p>
                           <p>
                             <span className="font-medium">Предметы:</span>{" "}
-                            {application.teacher.teacherDetails.subjects?.join(", ") || "Не указаны"}
+                            {application.teacher.subjects || "Не указаны"}
                           </p>
                         </div>
                       )}

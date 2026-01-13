@@ -159,17 +159,24 @@ const FindTeachers = () => {
                             </div>
 
                             {/* Resume Download */}
-                            {selectedTeacher.resumeFile && (
+                            {selectedTeacher.teacherDetails?.resume && (
                                 <div className="flex items-center justify-between p-4 border border-primary/20 bg-primary/5 rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <FileText className="h-8 w-8 text-primary" />
                                         <div>
                                             <p className="font-medium text-sm">Прикрепленное резюме</p>
-                                            <p className="text-xs text-slate-500">{selectedTeacher.resumeFile}</p>
+                                            <p className="text-xs text-slate-500">Резюме учителя</p>
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Download className="h-4 w-4" /> Скачать PDF
+                                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                                        <a
+                                            href={selectedTeacher.teacherDetails.resume}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Download className="h-4 w-4" /> Скачать PDF
+                                        </a>
                                     </Button>
                                 </div>
                             )}

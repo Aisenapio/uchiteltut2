@@ -12,20 +12,24 @@ const SchoolProfile = () => {
         district: "",
         phone: "",
         email: "",
-        address: ""
+        address: "",
+        website: "",
+        description: ""
     });
 
     const { loading, error, data } = useQuery(GET_SCHOOL_PROFILE);
     const [updateSchoolProfile] = useMutation(UPDATE_SCHOOL_PROFILE);
 
     useEffect(() => {
-        if (data?.schoolProfile) {
+        if (data?.me) {
             setForm({
-                name: data.schoolProfile.name,
-                district: data.schoolProfile.district,
-                phone: data.schoolProfile.phone,
-                email: data.schoolProfile.email,
-                address: data.schoolProfile.address
+                name: data.me.name || "",
+                district: data.me.district || "",
+                phone: data.me.phone || "",
+                email: data.me.email || "",
+                address: data.me.address || "",
+                website: data.me.schoolDetails?.website || "",
+                description: data.me.schoolDetails?.description || ""
             });
         }
     }, [data]);
@@ -95,13 +99,35 @@ const SchoolProfile = () => {
                         />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">Email (нельзя изменить)</Label>
                         <Input
                             id="email"
                             value={form.email}
-                            onChange={e => setForm({ ...form, email: e.target.value })}
+                            disabled
+                            className="bg-slate-50"
                         />
                     </div>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="website">Веб-сайт</Label>
+                    <Input
+                        id="website"
+                        value={form.website}
+                        onChange={e => setForm({ ...form, website: e.target.value })}
+                        placeholder="https://example.com"
+                    />
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="description">Описание школы</Label>
+                    <Textarea
+                        id="description"
+                        value={form.description}
+                        onChange={e => setForm({ ...form, description: e.target.value })}
+                        placeholder="Расскажите о вашей школе..."
+                        rows={4}
+                    />
                 </div>
 
                 <div className="pt-4">

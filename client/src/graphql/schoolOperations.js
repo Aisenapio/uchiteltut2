@@ -249,10 +249,16 @@ export const GET_JOB_APPLICATIONS = gql`
         firstName
         lastName
         email
+        subjects
+        experience
+        education {
+          id
+          institution
+          faculty
+          level
+          year
+        }
         teacherDetails {
-          education
-          experience
-          subjects
           certifications
           resume
         }
@@ -293,10 +299,16 @@ export const UPDATE_APPLICATION_STATUS = gql`
         firstName
         lastName
         email
+        subjects
+        experience
+        education {
+          id
+          institution
+          faculty
+          level
+          year
+        }
         teacherDetails {
-          education
-          experience
-          subjects
           certifications
           resume
         }
@@ -337,10 +349,16 @@ export const ADD_APPLICATION_MESSAGE = gql`
         firstName
         lastName
         email
+        subjects
+        experience
+        education {
+          id
+          institution
+          faculty
+          level
+          year
+        }
         teacherDetails {
-          education
-          experience
-          subjects
           certifications
           resume
         }
