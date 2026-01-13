@@ -1,11 +1,9 @@
-import { useCallback, useState, useMemo } from "react"
+import { useCallback, useState } from "react"
 import {
   IconArrowRightDashed,
   IconDeviceLaptop,
   IconMoon,
   IconSun,
-  IconUser,
-  IconPackage,
 } from "@tabler/icons-react"
 import { useNavigate } from "react-router"
 import {
@@ -20,8 +18,6 @@ import {
 import { sidebarData } from "./layout/data/sidebar-data"
 import { useSearch } from "./search-provider"
 import { ScrollArea } from "./ui/scroll-area"
-import { getSubscribers } from "@/pages/main/subscribers/data/subscribers"
-import { products } from "@/pages/main/products/data/products"
 
 export function CommandMenu() {
   const navigate = useNavigate()
@@ -35,83 +31,16 @@ export function CommandMenu() {
     [setOpen]
   )
 
-  // Получаем данные подписчиков и продуктов
-  const subscribers = useMemo(() => getSubscribers(), [])
-  const allProducts = useMemo(() => products, [])
-
-  // Функция для получения названия подписчика
-  const getSubscriberName = (subscriber) => {
-    if (subscriber.type === "legal") {
-      return subscriber.companyName || ""
-    } else {
-      const { firstName, lastName, middleName } = subscriber
-      return [lastName, firstName, middleName].filter(Boolean).join(" ") || ""
-    }
-  }
-
-  // Функция для получения поискового значения подписчика (включает все возможные варианты названия)
-  const getSubscriberSearchValue = (subscriber) => {
-    const name = getSubscriberName(subscriber)
-    if (subscriber.type === "legal") {
-      return `${name} ${subscriber.companyName || ""} ${subscriber.inn || ""}`.toLowerCase()
-    } else {
-      const { firstName, lastName, middleName, email } = subscriber
-      return `${name} ${firstName || ""} ${lastName || ""} ${middleName || ""} ${email || ""}`.toLowerCase()
-    }
-  }
-
   return (
-    <CommandDialog 
-      modal 
-      open={open} 
+    <CommandDialog
+      modal
+      open={open}
       onOpenChange={setOpen}
     >
-      <CommandInput placeholder="Поиск по страницам, подписчикам и продуктам..." />
+      <CommandInput placeholder="Поиск по страницам..." />
       <CommandList>
         <ScrollArea type="hover" className="h-72 pr-1">
           <CommandEmpty>Результаты не найдены.</CommandEmpty>
-
-          {/* Все подписчики - будут отфильтрованы автоматически cmdk */}
-          <CommandGroup heading="Подписчики">
-            {subscribers.map((subscriber) => {
-              const name = getSubscriberName(subscriber)
-              const searchValue = getSubscriberSearchValue(subscriber)
-              return (
-                <CommandItem
-                  key={subscriber.id}
-                  value={searchValue}
-                  keywords={[name.toLowerCase(), subscriber.email?.toLowerCase() || ""].filter(Boolean)}
-                  onSelect={() => {
-                    runCommand(() => navigate(`/subscribers/${subscriber.id}`))
-                  }}
-                >
-                  <IconUser className="mr-2 h-4 w-4" />
-                  <span>{name}</span>
-                </CommandItem>
-              )
-            })}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          {/* Все продукты - будут отфильтрованы автоматически cmdk */}
-          <CommandGroup heading="Продукты">
-            {allProducts.map((product) => (
-              <CommandItem
-                key={product.id}
-                value={product.name.toLowerCase()}
-                keywords={[product.name.toLowerCase(), product.description?.toLowerCase() || ""].filter(Boolean)}
-                onSelect={() => {
-                  runCommand(() => navigate(`/products/${product.id}`))
-                }}
-              >
-                <IconPackage className="mr-2 h-4 w-4" />
-                <span>{product.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
 
           {/* Навигация */}
           {sidebarData.navGroups.map((group) => (
