@@ -7,10 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, Upload, FileText, Briefcase, GraduationCap } from "lucide-react";
+import { Plus, Trash2, Save, Upload, FileText, Briefcase, GraduationCap, Download } from "lucide-react";
+
+const UPLOAD_SERVER_URL = 'http://localhost:4000/upload';
 
 export default function TeacherProfile() {
     const fileInputRef = useRef(null);
+    const resumeFileRef = useRef(null);
     const [profile, setProfile] = useState({
         firstName: "",
         lastName: "",
@@ -23,15 +26,29 @@ export default function TeacherProfile() {
         about: "",
         category: "",
         subjects: "",
-        resumeFile: null
+        resumeFileName: null,
+        resumeBase64: null
     });
 
     const { loading, error, data } = useQuery(GET_TEACHER_PROFILE);
     const [updateTeacherProfile] = useMutation(UPDATE_TEACHER_PROFILE);
 
     useEffect(() => {
-        if (data?.teacherProfile) {
-            setProfile(data.teacherProfile);
+        if (data?.me) {
+            const teacherDetails = data.me.teacherDetails || {};
+            setProfile(prev => ({
+                ...prev,
+                firstName: data.me.firstName || "",
+                lastName: data.me.lastName || "",
+                email: data.me.email || "",
+                // Map teacherDetails fields
+                education: teacherDetails.education ? JSON.parse(teacherDetails.education) : [],
+                experience: teacherDetails.experience ? JSON.parse(teacherDetails.experience) : [],
+                subjects: teacherDetails.subjects ? teacherDetails.subjects.join(', ') : "",
+                // Handle resume
+                resumeFileName: teacherDetails.resume ? "resume.pdf" : null,
+                resumeBase64: teacherDetails.resume || null
+            }));
         }
     }, [data]);
 
@@ -76,26 +93,83 @@ export default function TeacherProfile() {
     // File Handler
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file && file.type === "application/pdf") {
-            setProfile(prev => ({ ...prev, resumeFile: file.name }));
-        } else {
+        if (!file) return;
+
+        if (file.type !== "application/pdf") {
             alert("Пожалуйста, загрузите файл в формате PDF");
+            return;
         }
+
+        // Store file object for upload
+        resumeFileRef.current = file;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64 = event.target.result;
+            setProfile(prev => ({
+                ...prev,
+                resumeFileName: file.name,
+                resumeBase64: base64
+            }));
+        };
+        reader.onerror = () => {
+            alert("Ошибка при чтении файла");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Upload resume file to upload server
+    const uploadResumeFile = async (file) => {
+        const formData = new FormData();
+        formData.append('resume', file);
+
+        const response = await fetch(`${UPLOAD_SERVER_URL}`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result.fileUrl; // Return the URL of the uploaded file
     };
 
     // Save profile handler
     const handleSave = async () => {
         try {
-            // Prepare the profile data for submission
-            const profileInput = {
-                ...profile,
-                // Convert file to appropriate format if needed
-                resumeFile: profile.resumeFile
+            let resumeUrl = profile.resumeBase64;
+
+            // If a new file was selected, upload it
+            if (resumeFileRef.current) {
+                try {
+                    resumeUrl = await uploadResumeFile(resumeFileRef.current);
+                    // Clear the file ref after successful upload
+                    resumeFileRef.current = null;
+                } catch (uploadError) {
+                    alert(`Ошибка загрузки файла: ${uploadError.message}`);
+                    return;
+                }
+            } else if (profile.resumeFileName === null) {
+                // User removed the file, set resume to null
+                resumeUrl = null;
+            }
+            // If resumeBase64 already contains a URL (from previous upload) and no new file, keep it as is
+
+            // Prepare teacherDetails input according to GraphQL schema
+            const teacherDetailsInput = {
+                education: Array.isArray(profile.education) ? JSON.stringify(profile.education) : profile.education,
+                experience: Array.isArray(profile.experience) ? JSON.stringify(profile.experience) : profile.experience,
+                subjects: profile.subjects ? profile.subjects.split(',').map(s => s.trim()).filter(s => s) : [],
+                certifications: [], // Not implemented yet
+                resume: resumeUrl
             };
 
             await updateTeacherProfile({
                 variables: {
-                    input: profileInput
+                    input: teacherDetailsInput
                 }
             });
 
@@ -182,20 +256,58 @@ export default function TeacherProfile() {
                             />
                             <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="border-dashed border-2">
                                 <Upload className="mr-2 h-4 w-4" />
-                                {profile.resumeFile ? "Заменить файл" : "Загрузить PDF"}
+                                {profile.resumeFileName ? "Заменить файл" : "Загрузить PDF"}
                             </Button>
-                            {profile.resumeFile && (
+                            {profile.resumeFileName && (
                                 <div className="flex items-center gap-2 text-sm text-primary font-medium p-2 bg-white rounded border border-primary/10">
                                     <FileText className="h-4 w-4" />
-                                    {profile.resumeFile}
+                                    {profile.resumeFileName}
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 ml-2 text-slate-400 hover:text-destructive"
+                                        className="h-6 w-6 text-slate-400 hover:text-primary"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleChange("resumeFile", null);
+                                            if (profile.resumeBase64) {
+                                                // Check if it's a URL (starts with http://, https://, or /)
+                                                if (profile.resumeBase64.startsWith('http://') ||
+                                                    profile.resumeBase64.startsWith('https://') ||
+                                                    profile.resumeBase64.startsWith('/')) {
+                                                    // Open URL in new tab
+                                                    window.open(profile.resumeBase64, '_blank');
+                                                } else {
+                                                    // Assume it's a data URL (base64)
+                                                    const link = document.createElement('a');
+                                                    link.href = profile.resumeBase64;
+                                                    link.download = profile.resumeFileName || 'resume.pdf';
+                                                    link.click();
+                                                }
+                                            }
                                         }}
+                                        title="Скачать резюме"
+                                    >
+                                        <Download className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-slate-400 hover:text-destructive"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Clear file input
+                                            if (fileInputRef.current) {
+                                                fileInputRef.current.value = '';
+                                            }
+                                            // Clear stored file object
+                                            resumeFileRef.current = null;
+                                            // Clear profile state
+                                            setProfile(prev => ({
+                                                ...prev,
+                                                resumeFileName: null,
+                                                resumeBase64: null
+                                            }));
+                                        }}
+                                        title="Удалить резюме"
                                     >
                                         <Trash2 className="h-3 w-3" />
                                     </Button>

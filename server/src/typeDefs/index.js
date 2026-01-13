@@ -7,22 +7,28 @@ const rootTypeDefs = gql`
   type Query {
     # User queries
     me: User
-    users: [User!]!
+    currentUser: User
+    users(filter: UserFilter): [User!]!
     user(id: ID!): User
-    
+
     # Job queries
-    jobs: [Job!]!
+    jobs(filter: JobFilter): [Job!]!
     job(id: ID!): Job
     myJobs: [Job!]! # Jobs posted by the authenticated user
     myApplications: [Job!]! # Jobs applied to by the authenticated user
+
+    # Support options
+    supportOptions: [String!]!
   }
 
   type Mutation {
     # User mutations
     signup(input: UserInput!): AuthPayload!
     login(input: LoginInput!): AuthPayload!
-    updateUser(firstName: String, lastName: String): User!
-    
+    updateUser(input: UserUpdateInput!): User!
+    updateSchoolProfile(input: SchoolProfileInput!): User!
+    updateTeacherProfile(input: TeacherProfileInput!): User!
+
     # Job mutations
     createJob(input: JobInput!): Job!
     updateJob(id: ID!, input: JobInput!): Job!

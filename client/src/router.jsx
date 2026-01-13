@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router";
-
+import SearchProvider from "@/components/search-provider";
 import PublicLayout from "@/pages/public/layout";
 import HomePage from "@/pages/public/Home";
 import JobDetailPage from "@/pages/public/JobDetail";
@@ -30,49 +31,64 @@ import MyResponses from "@/pages/main/teacher/MyResponses";
 import RootLayout from "./layout";
 
 const Router = () => {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/job/:id" element={<JobDetailPage />} />
-        </Route>
+      <SearchProvider value={{ open, setOpen }}>
+        <Routes>
+          {/* Public Routes */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/job/:id" element={<JobDetailPage />} />
+          </Route>
 
-        {/* Auth Routes */}
-        <Route path="login" element={<LoginPage />} />
-        <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="register" element={<RegisterPage />} />
+          {/* Auth Routes */}
+          <Route path="login" element={<LoginPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="register" element={<RegisterPage />} />
 
-        {/* Dashboard Routes */}
-        <Route path="dashboard" element={<RootLayout />}>
-          <Route path="" element={<DashboardLayout />}>
+          {/* Dashboard Routes */}
+          <Route path="dashboard" element={<RootLayout />}>
+            <Route path="" element={<DashboardLayout />}>
 
-            {/* School Routes */}
-            <Route path="school" element={<SchoolDashboardLayout />}>
-              <Route index element={<MyVacancies />} />
-              <Route path="vacancies/new" element={<EditVacancy />} />
-              <Route path="vacancies/:id" element={<EditVacancy />} />
-              <Route path="teachers" element={<FindTeachers />} />
-              <Route path="profile" element={<SchoolProfile />} />
-            </Route>
+              {/* School Routes */}
+              <Route path="school" element={<SchoolDashboardLayout />}>
+                <Route index element={<MyVacancies />} />
+                <Route path="vacancies/new" element={<EditVacancy />} />
+                <Route path="vacancies/:id" element={<EditVacancy />} />
+                <Route path="teachers" element={<FindTeachers />} />
+                <Route path="profile" element={<SchoolProfile />} />
+              </Route>
 
-            {/* Teacher Routes */}
-            <Route path="teacher" element={<TeacherDashboardLayout />}>
-              <Route path="profile" element={<TeacherProfile />} />
-              <Route path="search" element={<JobSearch />} />
-              <Route path="responses" element={<MyResponses />} />
+              {/* Teacher Routes */}
+              <Route path="teacher" element={<TeacherDashboardLayout />}>
+                <Route path="profile" element={<TeacherProfile />} />
+                <Route path="search" element={<JobSearch />} />
+                <Route path="responses" element={<MyResponses />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
 
-        {/* Error Routes */}
-        <Route path="401" element={<UnauthorizedErrorPage />} />
-        <Route path="403" element={<ForbiddenErrorPage />} />
-        <Route path="404" element={<NotFoundErrorPage />} />
-        <Route path="503" element={<MaintenanceErrorPage />} />
-        <Route path="*" element={<NotFoundErrorPage />} />
-      </Routes>
+          {/* Error Routes */}
+          <Route path="401" element={<UnauthorizedErrorPage />} />
+          <Route path="403" element={<ForbiddenErrorPage />} />
+          <Route path="404" element={<NotFoundErrorPage />} />
+          <Route path="503" element={<MaintenanceErrorPage />} />
+          <Route path="*" element={<NotFoundErrorPage />} />
+        </Routes>
+      </SearchProvider>
     </BrowserRouter>
   );
 };

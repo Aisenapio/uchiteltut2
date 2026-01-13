@@ -41,6 +41,7 @@ const userSchema = new mongoose.Schema({
   // Additional fields for schools
   schoolDetails: {
     name: String,
+    district: String,
     address: String,
     phone: String,
     website: String,

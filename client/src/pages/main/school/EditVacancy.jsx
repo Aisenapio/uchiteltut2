@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation } from '@apollo/client/react';
-import { GET_VACANCY_BY_ID, CREATE_VACANCY, UPDATE_VACANCY } from '@/graphql/schoolOperations';
+import { GET_VACANCY_BY_ID, CREATE_VACANCY, UPDATE_VACANCY, GET_SUPPORT_OPTIONS } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supportOptions } from "@/data/mock";
+// import { supportOptions } from "@/data/mock";
 import {
     Command,
     CommandEmpty,
@@ -31,13 +31,18 @@ const EditVacancy = () => {
     const [openSupport, setOpenSupport] = useState(false);
     const [supportSearch, setSupportSearch] = useState("");
     const [form, setForm] = useState({
+        title: "",
         position: "",
+        description: "",
         salary: "",
         hours: "",
         duties: "",
         benefits: "",
         support: "",
-        studentEmployment: false
+        studentEmployment: false,
+        location: "",
+        subject: "",
+        requirements: []
     });
 
     // Query to get vacancy data if editing
@@ -46,20 +51,29 @@ const EditVacancy = () => {
         skip: !isEditing,
     });
 
+    // Query to get support options from server
+    const { data: supportOptionsData } = useQuery(GET_SUPPORT_OPTIONS);
+    const supportOptions = supportOptionsData?.supportOptions || [];
+
     // Mutation for creating/updating vacancy
     const [createVacancy] = useMutation(CREATE_VACANCY);
     const [updateVacancy] = useMutation(UPDATE_VACANCY);
 
     useEffect(() => {
-        if (isEditing && data?.vacancy) {
+        if (isEditing && data?.job) {
             setForm({
-                position: data.vacancy.position,
-                salary: data.vacancy.salary,
-                hours: data.vacancy.hours,
-                duties: data.vacancy.duties,
-                benefits: data.vacancy.benefits,
-                support: data.vacancy.support,
-                studentEmployment: data.vacancy.studentEmployment
+                title: data.job.title || data.job.position,
+                position: data.job.position,
+                description: data.job.description || data.job.duties,
+                salary: data.job.salary,
+                hours: data.job.hours,
+                duties: data.job.duties,
+                benefits: data.job.benefits,
+                support: data.job.support,
+                studentEmployment: data.job.studentEmployment,
+                location: data.job.location,
+                subject: data.job.subject,
+                requirements: data.job.requirements || []
             });
         }
     }, [data, isEditing]);
@@ -67,13 +81,31 @@ const EditVacancy = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Prepare input for server
+        const title = form.title || form.position;
+        const description = form.description || form.duties;
+        const input = {
+            title: title,
+            position: form.position,
+            description: description,
+            salary: form.salary,
+            location: form.location,
+            hours: form.hours ? parseInt(form.hours) : 0,
+            duties: form.duties ? form.duties.split('\n').filter(line => line.trim()) : [],
+            benefits: form.benefits ? form.benefits.split('\n').filter(line => line.trim()) : [],
+            support: form.support,
+            studentEmployment: form.studentEmployment,
+            subject: form.subject,
+            requirements: form.requirements
+        };
+
         try {
             if (isEditing) {
                 // Update existing vacancy
                 await updateVacancy({
                     variables: {
                         id: id,
-                        input: form
+                        input: input
                     }
                 });
                 alert("Вакансия обновлена!");
@@ -81,7 +113,7 @@ const EditVacancy = () => {
                 // Create new vacancy
                 await createVacancy({
                     variables: {
-                        input: form
+                        input: input
                     }
                 });
                 alert("Вакансия создана!");
@@ -136,6 +168,27 @@ const EditVacancy = () => {
                             value={form.hours}
                             onChange={e => setForm({ ...form, hours: e.target.value })}
                             placeholder="18 часов"
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="location">Местоположение</Label>
+                        <Input
+                            id="location"
+                            value={form.location}
+                            onChange={e => setForm({ ...form, location: e.target.value })}
+                            placeholder="Якутск"
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="subject">Предмет</Label>
+                        <Input
+                            id="subject"
+                            value={form.subject}
+                            onChange={e => setForm({ ...form, subject: e.target.value })}
+                            placeholder="Математика"
                         />
                     </div>
                 </div>

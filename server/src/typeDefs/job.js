@@ -5,11 +5,20 @@ const jobTypeDefs = gql`
   type Job {
     id: ID!
     title: String!
+    position: String!
     description: String!
     school: User!
     requirements: [String!]!
     salary: String
     location: String!
+    hours: Int
+    duties: [String!]
+    benefits: [String!]
+    support: String
+    studentEmployment: Boolean
+    openDate: String!
+    status: String!
+    subject: String
     postedAt: String!
     deadline: String
     isActive: Boolean!
@@ -23,6 +32,24 @@ const jobTypeDefs = gql`
     salary: String
     location: String!
     deadline: String
+    position: String!
+    hours: Int
+    duties: [String!]
+    benefits: [String!]
+    support: String
+    studentEmployment: Boolean
+    openDate: String
+    status: String
+    subject: String
+  }
+
+  input JobFilter {
+    search: String
+    subject: String
+    city: String
+    minHours: Int
+    minSalary: Int
+    support: String
   }
 `;
 

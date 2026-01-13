@@ -1,9 +1,9 @@
 import { gql } from '@apollo/client';
 
-// Get all vacancies
+// Get all jobs
 export const GET_VACANCIES = gql`
-  query GetVacancies($filter: VacancyFilter) {
-    vacancies(filter: $filter) {
+  query GetJobs($filter: JobFilter) {
+    jobs(filter: $filter) {
       id
       position
       salary
@@ -12,13 +12,15 @@ export const GET_VACANCIES = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
       school {
         id
         name
         district
         phone
-        email
         address
+        email
       }
       openDate
       status
@@ -26,10 +28,10 @@ export const GET_VACANCIES = gql`
   }
 `;
 
-// Get my vacancies (for logged in school)
+// Get my jobs (for logged in school)
 export const GET_MY_VACANCIES = gql`
-  query GetMyVacancies {
-    myVacancies {
+  query GetMyJobs {
+    myJobs {
       id
       position
       salary
@@ -38,16 +40,26 @@ export const GET_MY_VACANCIES = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
+      school {
+        id
+        name
+        district
+        phone
+        address
+        email
+      }
       openDate
       status
     }
   }
 `;
 
-// Get vacancy by ID
+// Get job by ID
 export const GET_VACANCY_BY_ID = gql`
-  query GetVacancyById($id: ID!) {
-    vacancy(id: $id) {
+  query GetJobById($id: ID!) {
+    job(id: $id) {
       id
       position
       salary
@@ -56,16 +68,26 @@ export const GET_VACANCY_BY_ID = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
+      school {
+        id
+        name
+        district
+        phone
+        address
+        email
+      }
       openDate
       status
     }
   }
 `;
 
-// Create vacancy mutation
+// Create job mutation
 export const CREATE_VACANCY = gql`
-  mutation CreateVacancy($input: VacancyInput!) {
-    createVacancy(input: $input) {
+  mutation CreateJob($input: JobInput!) {
+    createJob(input: $input) {
       id
       position
       salary
@@ -74,16 +96,26 @@ export const CREATE_VACANCY = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
+      school {
+        id
+        name
+        district
+        phone
+        address
+        email
+      }
       openDate
       status
     }
   }
 `;
 
-// Update vacancy mutation
+// Update job mutation
 export const UPDATE_VACANCY = gql`
-  mutation UpdateVacancy($id: ID!, $input: VacancyInput!) {
-    updateVacancy(id: $id, input: $input) {
+  mutation UpdateJob($id: ID!, $input: JobInput!) {
+    updateJob(id: $id, input: $input) {
       id
       position
       salary
@@ -92,32 +124,50 @@ export const UPDATE_VACANCY = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
+      school {
+        id
+        name
+        district
+        phone
+        address
+        email
+      }
       openDate
       status
     }
   }
 `;
 
-// Delete vacancy mutation
+// Delete job mutation
 export const DELETE_VACANCY = gql`
-  mutation DeleteVacancy($id: ID!) {
-    deleteVacancy(id: $id) {
-      success
-      message
-    }
+  mutation DeleteJob($id: ID!) {
+    deleteJob(id: $id)
   }
 `;
 
 // Get school profile
 export const GET_SCHOOL_PROFILE = gql`
   query GetSchoolProfile {
-    schoolProfile {
+    me {
       id
+      email
+      firstName
+      lastName
+      role
       name
       district
       phone
-      email
       address
+      schoolDetails {
+        name
+        district
+        address
+        phone
+        website
+        description
+      }
     }
   }
 `;
@@ -127,44 +177,49 @@ export const UPDATE_SCHOOL_PROFILE = gql`
   mutation UpdateSchoolProfile($input: SchoolProfileInput!) {
     updateSchoolProfile(input: $input) {
       id
+      email
+      firstName
+      lastName
+      role
       name
       district
       phone
-      email
       address
+      schoolDetails {
+        name
+        district
+        address
+        phone
+        website
+        description
+      }
     }
   }
 `;
 
 // Find teachers
 export const FIND_TEACHERS = gql`
-  query FindTeachers($filter: TeacherFilter) {
-    teachers(filter: $filter) {
+  query FindTeachers($filter: UserFilter) {
+    users(filter: $filter) {
       id
       firstName
       lastName
-      middleName
-      birthDate
-      phone
       email
-      education {
-        id
-        institution
-        faculty
-        year
-        level
+      role
+      teacherDetails {
+        education
+        experience
+        subjects
+        certifications
+        resume
       }
-      experience {
-        id
-        place
-        position
-        start
-        end
-      }
-      about
-      category
-      subjects
-      resumeFile
     }
+  }
+`;
+
+// Get support options
+export const GET_SUPPORT_OPTIONS = gql`
+  query GetSupportOptions {
+    supportOptions
   }
 `;

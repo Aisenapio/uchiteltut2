@@ -1,40 +1,32 @@
 // src/index.js
-const { ApolloServer } = require('@apollo/server');
-const { startStandaloneServer } = require('@apollo/server/standalone');
-const typeDefs = require('./typeDefs');
-const resolvers = require('./resolvers');
+const createServer = require('./server');
 const connectDB = require('./utils/connectDB');
-const User = require('./models/User');
-const { getUserIdFromToken } = require('./utils/auth');
 
 // Connect to MongoDB
 connectDB();
 
 async function startServer() {
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
+  const { httpServer } = await createServer();
+  const port = process.env.PORT || 4000;
+
+  await new Promise((resolve) => {
+    httpServer.listen({ port }, resolve);
   });
 
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: process.env.PORT || 4000 },
-    context: async ({ req }) => {
-      // Extract token from headers
-      const token = req?.headers?.authorization || '';
-      let user = null;
+  console.log(`🚀 Server ready at: http://localhost:${port}`);
+  console.log(`   GraphQL endpoint: http://localhost:${port}/graphql`);
+  console.log(`   Upload endpoint: POST http://localhost:${port}/upload`);
+  console.log(`   Health check: GET http://localhost:${port}/health`);
+  console.log(`   Uploads static files: http://localhost:${port}/uploads`);
 
-      if (token) {
-        const userId = getUserIdFromToken(token);
-        if (userId) {
-          user = await User.findById(userId);
-        }
-      }
-
-      return { user };
-    },
+  // Handle graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing server');
+    httpServer.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
   });
-
-  console.log(`🚀 Server ready at: ${url}`);
 }
 
 startServer().catch(error => {

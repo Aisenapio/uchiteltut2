@@ -3,32 +3,19 @@ import { gql } from '@apollo/client';
 // Get teacher profile
 export const GET_TEACHER_PROFILE = gql`
   query GetTeacherProfile {
-    teacherProfile {
+    me {
       id
+      email
       firstName
       lastName
-      middleName
-      birthDate
-      phone
-      email
-      education {
-        id
-        institution
-        faculty
-        year
-        level
+      role
+      teacherDetails {
+        education
+        experience
+        subjects
+        certifications
+        resume
       }
-      experience {
-        id
-        place
-        position
-        start
-        end
-      }
-      about
-      category
-      subjects
-      resumeFile
     }
   }
 `;
@@ -38,30 +25,17 @@ export const UPDATE_TEACHER_PROFILE = gql`
   mutation UpdateTeacherProfile($input: TeacherProfileInput!) {
     updateTeacherProfile(input: $input) {
       id
+      email
       firstName
       lastName
-      middleName
-      birthDate
-      phone
-      email
-      education {
-        id
-        institution
-        faculty
-        year
-        level
+      role
+      teacherDetails {
+        education
+        experience
+        subjects
+        certifications
+        resume
       }
-      experience {
-        id
-        place
-        position
-        start
-        end
-      }
-      about
-      category
-      subjects
-      resumeFile
     }
   }
 `;
@@ -69,16 +43,23 @@ export const UPDATE_TEACHER_PROFILE = gql`
 // Get job responses for teacher
 export const GET_JOB_RESPONSES = gql`
   query GetJobResponses {
-    jobResponses {
+    myApplications {
       id
-      jobId
-      date
-      status
-      job {
+      position
+      salary
+      hours
+      location
+      subject
+      school {
         id
-        position
-        school
+        name
+        district
+        phone
+        address
+        email
       }
+      openDate
+      status
     }
   }
 `;
@@ -86,11 +67,28 @@ export const GET_JOB_RESPONSES = gql`
 // Submit job response
 export const SUBMIT_JOB_RESPONSE = gql`
   mutation SubmitJobResponse($jobId: ID!) {
-    submitJobResponse(jobId: $jobId) {
+    applyToJob(jobId: $jobId) {
       id
-      jobId
-      date
+      position
+      salary
+      hours
+      location
+      subject
+      school {
+        id
+        name
+        district
+        phone
+        address
+        email
+      }
+      openDate
       status
+      applicants {
+        id
+        firstName
+        lastName
+      }
     }
   }
 `;
@@ -107,13 +105,15 @@ export const GET_ALL_JOBS = gql`
       benefits
       support
       studentEmployment
+      location
+      subject
       school {
         id
         name
         district
         phone
-        email
         address
+        email
       }
       openDate
       status

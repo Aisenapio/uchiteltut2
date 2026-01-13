@@ -37,7 +37,7 @@ const MyVacancies = () => {
     if (loading) return <div className="p-6">Загрузка вакансий...</div>;
     if (error) return <div className="p-6">Ошибка: {error.message}</div>;
 
-    const myJobs = data?.myVacancies || [];
+    const myJobs = data?.myJobs || [];
 
     return (
         <div className="space-y-6">

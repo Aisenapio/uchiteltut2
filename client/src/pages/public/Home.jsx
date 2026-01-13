@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import { jobs, supportOptions } from "../../data/mock";
+import { useQuery } from "@apollo/client/react";
+import { GET_SUPPORT_OPTIONS } from "@/graphql/schoolOperations";
+import { GET_ALL_JOBS } from "@/graphql/teacherOperations";
 import VacancyCard from "../../components/public/VacancyCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,48 +22,28 @@ const Home = () => {
     });
     const [showFilters, setShowFilters] = useState(false);
 
-    const filteredJobs = useMemo(() => {
-        return jobs.filter(job => {
-            // 1. Main Search Query (matches text in multiple fields)
-            if (searchQuery.trim()) {
-                const lowerQuery = searchQuery.toLowerCase();
-                const matchesMain =
-                    job.position.toLowerCase().includes(lowerQuery) ||
-                    job.school.toLowerCase().includes(lowerQuery) ||
-                    job.region.toLowerCase().includes(lowerQuery);
-                if (!matchesMain) return false;
+    // Apollo Queries for jobs and support options
+    const { loading: jobsLoading, error: jobsError, data: jobsData } = useQuery(GET_ALL_JOBS, {
+        variables: {
+            filter: {
+                search: searchQuery || undefined,
+                subject: filters.subject || undefined,
+                city: filters.city || undefined,
+                minHours: filters.hours ? parseInt(filters.hours) : undefined,
+                minSalary: filters.salary ? parseInt(filters.salary) : undefined,
+                support: filters.support || undefined
             }
+        }
+    });
 
-            // 2. Subject Filter
-            if (filters.subject && !job.position.toLowerCase().includes(filters.subject.toLowerCase())) {
-                return false;
-            }
+    const { loading: supportOptionsLoading, error: supportOptionsError, data: supportOptionsData } = useQuery(GET_SUPPORT_OPTIONS);
 
-            // 3. City/Region Filter
-            if (filters.city && job.region !== filters.city) {
-                return false;
-            }
+    // Extract jobs and support options from query results
+    const jobs = jobsData?.jobs || [];
+    const supportOptions = supportOptionsData?.supportOptions || [];
 
-            // 4. Hours Filter (Parse "18 часов" -> 18)
-            if (filters.hours) {
-                const jobHours = parseInt(job.hours.replace(/\D/g, '')) || 0;
-                if (jobHours < parseInt(filters.hours)) return false;
-            }
-
-            // 5. Salary Filter (Parse "от 35000 ₽" -> 35000)
-            if (filters.salary) {
-                const jobSalary = parseInt(job.salary.replace(/\D/g, '')) || 0;
-                if (jobSalary < parseInt(filters.salary)) return false;
-            }
-
-            // 6. Support Filter
-            if (filters.support && !job.support.toLowerCase().includes(filters.support.toLowerCase())) {
-                return false;
-            }
-
-            return true;
-        });
-    }, [searchQuery, filters]);
+    // Since filtering is now handled on the server side, we can use jobs directly
+    const filteredJobs = jobs;
 
     const visibleJobs = filteredJobs.slice(0, visibleCount);
 
@@ -80,7 +62,14 @@ const Home = () => {
         setSearchQuery("");
     };
 
-    const uniqueCities = Array.from(new Set(jobs.map(j => j.region))).sort();
+    // Extract unique cities from jobs
+    const uniqueCities = useMemo(() => {
+        return Array.from(new Set(jobs.map(j => j.location))).sort().filter(Boolean);
+    }, [jobs]);
+
+    // Show loading state if either query is loading
+    const loading = jobsLoading || supportOptionsLoading;
+    const error = jobsError || supportOptionsError;
 
     return (
         <div className="space-y-8">
@@ -193,33 +182,48 @@ const Home = () => {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                    {filteredJobs.length > 0 ? `Результаты поиска: ${filteredJobs.length}` : "Вакансии не найдены"}
-                </h2>
+                {loading ? (
+                    <div className="text-center py-20">
+                        <p className="text-slate-500 text-lg">Загрузка вакансий...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-20 bg-red-50 rounded-2xl border border-dashed border-red-300">
+                        <p className="text-red-500 text-lg mb-4">Ошибка загрузки данных: {error.message}</p>
+                        <Button variant="outline" onClick={() => window.location.reload()} className="text-red-600">
+                            Повторить попытку
+                        </Button>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-6">
+                            {filteredJobs.length > 0 ? `Результаты поиска: ${filteredJobs.length}` : "Вакансии не найдены"}
+                        </h2>
 
-                {visibleJobs.length > 0 ? (
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {visibleJobs.map(job => (
-                                <VacancyCard key={job.id} job={job} />
-                            ))}
-                        </div>
+                        {visibleJobs.length > 0 ? (
+                            <div className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {visibleJobs.map(job => (
+                                        <VacancyCard key={job.id} job={job} />
+                                    ))}
+                                </div>
 
-                        {visibleCount < filteredJobs.length && (
-                            <div className="flex justify-center">
-                                <Button onClick={handleLoadMore} variant="outline" size="lg" className="min-w-[200px]">
-                                    Показать еще
+                                {visibleCount < filteredJobs.length && (
+                                    <div className="flex justify-center">
+                                        <Button onClick={handleLoadMore} variant="outline" size="lg" className="min-w-[200px]">
+                                            Показать еще
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                                <p className="text-slate-500 text-lg mb-4">По вашему запросу ничего не найдено 😔</p>
+                                <Button variant="outline" onClick={clearFilters} className="text-primary hover:text-primary/90">
+                                    Сбросить все фильтры
                                 </Button>
                             </div>
                         )}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                        <p className="text-slate-500 text-lg mb-4">По вашему запросу ничего не найдено 😔</p>
-                        <Button variant="outline" onClick={clearFilters} className="text-primary hover:text-primary/90">
-                            Сбросить все фильтры
-                        </Button>
-                    </div>
+                    </>
                 )}
             </div>
         </div>

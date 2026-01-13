@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(npm run dev)",
+      "Bash(curl:*)",
+      "Bash(npm run build)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(git check-ignore:*)"
+    ]
+  }
+}
