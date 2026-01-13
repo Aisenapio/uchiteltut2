@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from '@apollo/client/react';
+import { GET_SCHOOL_PROFILE, UPDATE_SCHOOL_PROFILE } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,17 +8,46 @@ import { Textarea } from "@/components/ui/textarea";
 
 const SchoolProfile = () => {
     const [form, setForm] = useState({
-        name: "МБОУ СОШ №2",
-        district: "Якутск",
-        phone: "+7 (4112) 44-44-44",
-        email: "school2@yakutsk.ru",
-        address: "ул. Ленина, д. 1"
+        name: "",
+        district: "",
+        phone: "",
+        email: "",
+        address: ""
     });
 
-    const handleSubmit = (e) => {
+    const { loading, error, data } = useQuery(GET_SCHOOL_PROFILE);
+    const [updateSchoolProfile] = useMutation(UPDATE_SCHOOL_PROFILE);
+
+    useEffect(() => {
+        if (data?.schoolProfile) {
+            setForm({
+                name: data.schoolProfile.name,
+                district: data.schoolProfile.district,
+                phone: data.schoolProfile.phone,
+                email: data.schoolProfile.email,
+                address: data.schoolProfile.address
+            });
+        }
+    }, [data]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert("Профиль сохранен!");
+
+        try {
+            await updateSchoolProfile({
+                variables: {
+                    input: form
+                }
+            });
+            alert("Профиль сохранен!");
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            alert(`Ошибка при сохранении профиля: ${err.message}`);
+        }
     };
+
+    if (loading) return <div className="p-6">Загрузка профиля...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
 
     return (
         <div className="max-w-2xl">

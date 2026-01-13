@@ -3,7 +3,7 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { IconBrandFacebook, IconBrandGithub } from "@tabler/icons-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { nofitySubmittedValues } from "@/lib/notify-submitted-values"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/password-input"
+import { useMutation } from '@apollo/client/react';
+import { LOGIN } from '@/graphql/authOperations';
 
 const formSchema = z.object({
   email: z
@@ -38,6 +40,8 @@ export function UserAuthForm({
   ...props
 }) {
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate();
+  const [login, { error }] = useMutation(LOGIN);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -47,13 +51,36 @@ export function UserAuthForm({
     },
   })
 
-  function onSubmit(data) {
-    setIsLoading(true)
-    nofitySubmittedValues(data)
+  async function onSubmit(data) {
+    setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 3000)
+    try {
+      const response = await login({
+        variables: {
+          email: data.email,
+          password: data.password
+        }
+      });
+
+      // Store the token in localStorage
+      const { token } = response.data.login;
+      localStorage.setItem('token', token);
+
+      // Redirect based on user role
+      const { role } = response.data.login.user;
+      if (role === 'school') {
+        navigate('/dashboard/school');
+      } else if (role === 'teacher') {
+        navigate('/dashboard/teacher');
+      } else {
+        navigate('/'); // Default redirect
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      // Handle error appropriately
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

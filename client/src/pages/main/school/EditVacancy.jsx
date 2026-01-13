@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { jobs } from "@/data/mock";
+import { useQuery, useMutation } from '@apollo/client/react';
+import { GET_VACANCY_BY_ID, CREATE_VACANCY, UPDATE_VACANCY } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,6 @@ const EditVacancy = () => {
     const isEditing = !!id;
     const [openSupport, setOpenSupport] = useState(false);
     const [supportSearch, setSupportSearch] = useState("");
-
     const [form, setForm] = useState({
         position: "",
         salary: "",
@@ -40,29 +40,61 @@ const EditVacancy = () => {
         studentEmployment: false
     });
 
-    useEffect(() => {
-        if (isEditing) {
-            const job = jobs.find(j => j.id === id);
-            if (job) {
-                setForm({
-                    position: job.position,
-                    salary: job.salary,
-                    hours: job.hours,
-                    duties: job.duties,
-                    benefits: job.benefits,
-                    support: job.support,
-                    studentEmployment: job.studentEmployment
-                });
-            }
-        }
-    }, [id, isEditing]);
+    // Query to get vacancy data if editing
+    const { loading, error, data } = useQuery(GET_VACANCY_BY_ID, {
+        variables: { id },
+        skip: !isEditing,
+    });
 
-    const handleSubmit = (e) => {
+    // Mutation for creating/updating vacancy
+    const [createVacancy] = useMutation(CREATE_VACANCY);
+    const [updateVacancy] = useMutation(UPDATE_VACANCY);
+
+    useEffect(() => {
+        if (isEditing && data?.vacancy) {
+            setForm({
+                position: data.vacancy.position,
+                salary: data.vacancy.salary,
+                hours: data.vacancy.hours,
+                duties: data.vacancy.duties,
+                benefits: data.vacancy.benefits,
+                support: data.vacancy.support,
+                studentEmployment: data.vacancy.studentEmployment
+            });
+        }
+    }, [data, isEditing]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Saving vacancy:", form);
-        alert(isEditing ? "Вакансия обновлена!" : "Вакансия создана!");
-        navigate("/dashboard/school");
+
+        try {
+            if (isEditing) {
+                // Update existing vacancy
+                await updateVacancy({
+                    variables: {
+                        id: id,
+                        input: form
+                    }
+                });
+                alert("Вакансия обновлена!");
+            } else {
+                // Create new vacancy
+                await createVacancy({
+                    variables: {
+                        input: form
+                    }
+                });
+                alert("Вакансия создана!");
+            }
+            navigate("/dashboard/school");
+        } catch (err) {
+            console.error('Error saving vacancy:', err);
+            alert(`Ошибка при сохранении вакансии: ${err.message}`);
+        }
     };
+
+    if (isEditing && loading) return <div>Загрузка...</div>;
+    if (isEditing && error) return <div>Ошибка: {error.message}</div>;
 
     return (
         <div className="max-w-2xl">

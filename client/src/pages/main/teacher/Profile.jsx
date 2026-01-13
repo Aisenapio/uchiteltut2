@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation } from '@apollo/client/react';
+import { GET_TEACHER_PROFILE, UPDATE_TEACHER_PROFILE } from '@/graphql/teacherOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,23 +12,28 @@ import { Plus, Trash2, Save, Upload, FileText, Briefcase, GraduationCap } from "
 export default function TeacherProfile() {
     const fileInputRef = useRef(null);
     const [profile, setProfile] = useState({
-        firstName: "Иван",
-        lastName: "Иванов",
-        middleName: "Иванович",
-        birthDate: "1990-01-01",
-        phone: "+7 (999) 123-45-67",
-        email: "ivanov@example.com",
-        education: [
-            { id: 1, institution: "СВФУ", faculty: "ИМИ", year: "2012", level: "Специалист" }
-        ],
-        experience: [
-            { id: 1, place: "МБОУ СОШ №1", position: "Учитель математики", start: "2012", end: "2020" }
-        ],
-        about: "Ответственный, пунктуальный, люблю детей.",
-        category: "Первая",
-        subjects: "Математика, Информатика",
+        firstName: "",
+        lastName: "",
+        middleName: "",
+        birthDate: "",
+        phone: "",
+        email: "",
+        education: [],
+        experience: [],
+        about: "",
+        category: "",
+        subjects: "",
         resumeFile: null
     });
+
+    const { loading, error, data } = useQuery(GET_TEACHER_PROFILE);
+    const [updateTeacherProfile] = useMutation(UPDATE_TEACHER_PROFILE);
+
+    useEffect(() => {
+        if (data?.teacherProfile) {
+            setProfile(data.teacherProfile);
+        }
+    }, [data]);
 
     const handleChange = (field, value) => {
         setProfile(prev => ({ ...prev, [field]: value }));
@@ -76,6 +83,32 @@ export default function TeacherProfile() {
         }
     };
 
+    // Save profile handler
+    const handleSave = async () => {
+        try {
+            // Prepare the profile data for submission
+            const profileInput = {
+                ...profile,
+                // Convert file to appropriate format if needed
+                resumeFile: profile.resumeFile
+            };
+
+            await updateTeacherProfile({
+                variables: {
+                    input: profileInput
+                }
+            });
+
+            alert("Профиль сохранен!");
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            alert(`Ошибка при сохранении профиля: ${err.message}`);
+        }
+    };
+
+    if (loading) return <div className="p-6">Загрузка профиля...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center justify-between">
@@ -83,7 +116,7 @@ export default function TeacherProfile() {
                     <h1 className="text-3xl font-bold tracking-tight">Электронная трудовая книжка</h1>
                     <p className="text-slate-500">Ваше профессиональное портфолио и история работы.</p>
                 </div>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleSave}>
                     <Save className="mr-2 h-4 w-4" /> Сохранить изменения
                 </Button>
             </div>

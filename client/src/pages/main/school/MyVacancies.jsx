@@ -1,7 +1,8 @@
-import { jobs } from "@/data/mock";
+import { useQuery, useMutation } from '@apollo/client/react';
+import { GET_MY_VACANCIES, DELETE_VACANCY } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
     Table,
     TableBody,
@@ -11,10 +12,32 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const MyVacancies = () => {
-    // Filter jobs for the "logged in" school (mocked as "МБОУ СОШ №2" for demo)
-    const myJobs = jobs.filter(j => j.school === "МБОУ СОШ №2" || true); // Showing all for demo purposes if needed, or filter stricter
+    const navigate = useNavigate();
+    const { loading, error, data, refetch } = useQuery(GET_MY_VACANCIES);
+    const [deleteVacancy] = useMutation(DELETE_VACANCY);
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Вы уверены, что хотите удалить эту вакансию?")) {
+            try {
+                await deleteVacancy({
+                    variables: { id }
+                });
+                toast.success("Вакансия успешно удалена");
+                refetch(); // Refresh the list after deletion
+            } catch (err) {
+                console.error('Error deleting vacancy:', err);
+                toast.error(`Ошибка при удалении вакансии: ${err.message}`);
+            }
+        }
+    };
+
+    if (loading) return <div className="p-6">Загрузка вакансий...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
+
+    const myJobs = data?.myVacancies || [];
 
     return (
         <div className="space-y-6">
@@ -48,7 +71,7 @@ const MyVacancies = () => {
                                 <TableCell>{job.salary}</TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                        Активна
+                                        {job.status}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{new Date(job.openDate).toLocaleDateString()}</TableCell>
@@ -59,7 +82,12 @@ const MyVacancies = () => {
                                                 <Pencil className="h-4 w-4 text-slate-500" />
                                             </Button>
                                         </Link>
-                                        <Button variant="ghost" size="icon" className="hover:text-red-600">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="hover:text-red-600"
+                                            onClick={() => handleDelete(job.id)}
+                                        >
                                             <Trash2 className="h-4 w-4 text-slate-500" />
                                         </Button>
                                     </div>

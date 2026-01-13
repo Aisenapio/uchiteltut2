@@ -2,28 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { jobs } from "@/data/mock";
-
-const mockResponses = [
-    {
-        id: 1,
-        jobId: "1",
-        date: "2024-12-20",
-        status: "invited", // invited, rejected, pending
-    },
-    {
-        id: 2,
-        jobId: "3",
-        date: "2024-12-18",
-        status: "pending",
-    },
-    {
-        id: 3,
-        jobId: "5",
-        date: "2024-12-15",
-        status: "rejected",
-    }
-];
+import { useQuery } from '@apollo/client/react';
+import { GET_JOB_RESPONSES } from '@/graphql/teacherOperations';
 
 const statusMap = {
     invited: { label: "Приглашение", variant: "default", color: "bg-green-500 hover:bg-green-600" },
@@ -32,10 +12,12 @@ const statusMap = {
 };
 
 export default function MyResponses() {
-    const responsesWithJob = mockResponses.map(r => {
-        const job = jobs.find(j => j.id === r.jobId) || { position: "Вакансия удалена", school: "Неизвестно" };
-        return { ...r, job };
-    });
+    const { loading, error, data } = useQuery(GET_JOB_RESPONSES);
+
+    if (loading) return <div className="p-6">Загрузка откликов...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
+
+    const responses = data?.jobResponses || [];
 
     return (
         <div className="space-y-6">
@@ -47,7 +29,7 @@ export default function MyResponses() {
             <Card>
                 <CardHeader>
                     <CardTitle>Список откликов</CardTitle>
-                    <CardDescription>Вы откликнулись на {mockResponses.length} вакансий</CardDescription>
+                    <CardDescription>Вы откликнулись на {responses.length} вакансий</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -61,10 +43,10 @@ export default function MyResponses() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {responsesWithJob.map((response) => (
+                            {responses.map((response) => (
                                 <TableRow key={response.id}>
-                                    <TableCell className="font-medium">{response.job.position}</TableCell>
-                                    <TableCell>{response.job.school}</TableCell>
+                                    <TableCell className="font-medium">{response.job?.position || "Вакансия удалена"}</TableCell>
+                                    <TableCell>{response.job?.school || "Неизвестно"}</TableCell>
                                     <TableCell>{response.date}</TableCell>
                                     <TableCell>
                                         <Badge

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { teachers } from "@/data/mock";
+import { useQuery } from '@apollo/client/react';
+import { FIND_TEACHERS } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,13 +13,20 @@ const FindTeachers = () => {
     const [filters, setFilters] = useState({ subject: "", experience: "" });
     const [visibleCount, setVisibleCount] = useState(25);
 
-    const filteredTeachers = teachers.filter(t => {
-        if (filters.subject && !t.subject.toLowerCase().includes(filters.subject.toLowerCase())) return false;
-        // Simple logic for demographic filtering later if needed
-        return true;
+    const { loading, error, data } = useQuery(FIND_TEACHERS, {
+        variables: {
+            filter: {
+                subject: filters.subject,
+                experience: filters.experience
+            }
+        }
     });
 
-    const visibleTeachers = filteredTeachers.slice(0, visibleCount);
+    if (loading) return <div className="p-6">Загрузка учителей...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
+
+    const allTeachers = data?.teachers || [];
+    const visibleTeachers = allTeachers.slice(0, visibleCount);
 
     const handleLoadMore = () => {
         setVisibleCount(prev => prev + 25);
@@ -52,18 +60,18 @@ const FindTeachers = () => {
                             <CardHeader>
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <CardTitle className="text-lg text-blue-900">{teacher.name}</CardTitle>
-                                        <CardDescription className="font-medium text-slate-700">{teacher.subject}</CardDescription>
+                                        <CardTitle className="text-lg text-blue-900">{teacher.firstName} {teacher.lastName}</CardTitle>
+                                        <CardDescription className="font-medium text-slate-700">{teacher.subjects}</CardDescription>
                                     </div>
                                     <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                                        <UsersIcon className="h-5 w-5" />
+                                        <GraduationCap className="h-5 w-5" />
                                     </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm">
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <Briefcase className="h-4 w-4" />
-                                    <span>Опыт: {teacher.experienceYears || 0} лет</span>
+                                    <span>Опыт: {teacher.experience?.length || 0} лет</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <GraduationCap className="h-4 w-4" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import client from '@/graphql/apolloClient';
 import SearchProvider from "@/components/search-provider"
 import { ThemeProvider } from "@/components/theme-provider"

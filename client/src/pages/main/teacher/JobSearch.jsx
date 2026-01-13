@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { jobs } from "@/data/mock";
+import { useQuery } from '@apollo/client/react';
+import { GET_ALL_JOBS } from '@/graphql/teacherOperations';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -9,15 +10,29 @@ export default function JobSearch() {
     const [searchQuery, setSearchQuery] = useState("");
     const [visibleCount, setVisibleCount] = useState(12);
 
+    const { loading, error, data } = useQuery(GET_ALL_JOBS, {
+        variables: {
+            filter: {
+                searchTerm: searchQuery
+            }
+        }
+    });
+
+    if (loading) return <div className="p-6">Загрузка вакансий...</div>;
+    if (error) return <div className="p-6">Ошибка: {error.message}</div>;
+
+    const allJobs = data?.jobs || [];
+
+    // Filter jobs based on search query
     const filteredJobs = useMemo(() => {
-        if (!searchQuery.trim()) return jobs;
+        if (!searchQuery.trim()) return allJobs;
         const lowerQuery = searchQuery.toLowerCase();
-        return jobs.filter(job =>
+        return allJobs.filter(job =>
             job.position.toLowerCase().includes(lowerQuery) ||
             job.school.toLowerCase().includes(lowerQuery) ||
             job.region.toLowerCase().includes(lowerQuery)
         );
-    }, [searchQuery]);
+    }, [allJobs, searchQuery]);
 
     const visibleJobs = filteredJobs.slice(0, visibleCount);
 
