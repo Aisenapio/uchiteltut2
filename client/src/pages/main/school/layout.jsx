@@ -65,7 +65,7 @@ export function SchoolSidebar({ ...props }) {
                 ))}
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={schoolSidebarData.user} />
+                <NavUser />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

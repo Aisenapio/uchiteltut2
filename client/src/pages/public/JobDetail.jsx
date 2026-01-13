@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery } from "@apollo/client/react";
 import { GET_VACANCY_BY_ID } from "@/graphql/schoolOperations";
+import { GET_TEACHER_PROFILE } from "@/graphql/teacherOperations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, School, Banknote, Clock, Award, Phone, Mail } from "lucide-react";
@@ -16,7 +17,49 @@ const JobDetail = () => {
         variables: { id }
     });
 
+    // Check if user is authenticated
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [hasResume, setHasResume] = useState(false);
+
+    // Get teacher profile if authenticated
+    const { data: teacherData } = useQuery(GET_TEACHER_PROFILE, {
+        skip: !isAuthenticated,
+    });
+
     const job = data?.job;
+
+    // Check authentication on component mount
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        setIsAuthenticated(!!token);
+    }, []);
+
+    // Check if teacher has resume
+    useEffect(() => {
+        const resume = teacherData?.me?.teacherDetails?.resume;
+        if (resume && resume.trim() !== '') {
+            setHasResume(true);
+        } else {
+            setHasResume(false);
+        }
+    }, [teacherData]);
+
+    const handleApplyClick = () => {
+        if (!isAuthenticated) {
+            // Redirect to login page
+            navigate('/auth/login');
+            return;
+        }
+
+        if (!hasResume) {
+            // Redirect to profile page to fill resume
+            navigate('/dashboard/teacher');
+            return;
+        }
+
+        // All checks passed, open the modal
+        setIsModalOpen(true);
+    };
 
     if (loading) {
         return (
@@ -136,7 +179,7 @@ const JobDetail = () => {
                             </div>
                         </div>
 
-                        <Button onClick={() => setIsModalOpen(true)} className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground">
+                        <Button onClick={handleApplyClick} className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground">
                             Откликнуться
                         </Button>
                         <p className="text-xs text-slate-400 text-center mt-3">

@@ -73,7 +73,7 @@ export function TeacherSidebar({ ...props }) {
                 ))}
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={teacherSidebarData.user} />
+                <NavUser />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>
