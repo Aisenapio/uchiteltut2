@@ -26,12 +26,6 @@ import TeacherProfile from "@/pages/main/teacher/Profile";
 import JobSearch from "@/pages/main/teacher/JobSearch";
 import MyResponses from "@/pages/main/teacher/MyResponses";
 
-import TasksPage from "@/pages/main/tasks";
-import TaskDetailPage from "@/pages/main/tasks/id";
-import TasksLayout from "@/pages/main/tasks/layout";
-import UsersPage from "@/pages/main/users";
-import UserDetailPage from "@/pages/main/users/id";
-import UsersLayout from "@/pages/main/users/layout";
 
 import RootLayout from "./layout";
 
@@ -68,16 +62,6 @@ const Router = () => {
               <Route path="profile" element={<TeacherProfile />} />
               <Route path="search" element={<JobSearch />} />
               <Route path="responses" element={<MyResponses />} />
-            </Route>
-
-            <Route element={<TasksLayout />}>
-              <Route path="tasks" element={<TasksPage />} />
-              <Route path="tasks/:id" element={<TaskDetailPage />} />
-            </Route>
-
-            <Route element={<UsersLayout />}>
-              <Route path="users" element={<UsersPage />} />
-              <Route path="users/:id" element={<UserDetailPage />} />
             </Route>
           </Route>
         </Route>
