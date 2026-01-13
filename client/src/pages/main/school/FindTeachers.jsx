@@ -71,7 +71,7 @@ const FindTeachers = () => {
                             <CardContent className="space-y-3 text-sm">
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <Briefcase className="h-4 w-4" />
-                                    <span>Опыт: {teacher.experience?.length || 0} лет</span>
+                                    <span>Опыт: {teacher.experience || 0} лет</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <GraduationCap className="h-4 w-4" />
@@ -92,7 +92,7 @@ const FindTeachers = () => {
                     ))}
                 </div>
 
-                {visibleCount < filteredTeachers.length && (
+                {visibleCount < allTeachers.length && (
                     <div className="flex justify-center pt-4">
                         <Button onClick={handleLoadMore} variant="outline" size="lg" className="min-w-[200px]">
                             Показать еще
@@ -106,7 +106,7 @@ const FindTeachers = () => {
                     <DialogHeader>
                         <DialogTitle className="text-2xl">{selectedTeacher?.name}</DialogTitle>
                         <DialogDescription className="text-lg text-primary font-medium">
-                            {selectedTeacher?.subject}
+                            {selectedTeacher?.subjects}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -146,20 +146,13 @@ const FindTeachers = () => {
                             <div className="space-y-3">
                                 <h3 className="flex items-center gap-2 font-semibold text-lg">
                                     <Briefcase className="h-5 w-5 text-slate-500" />
-                                    Трудовая деятельность
+                                    Опыт работы
                                 </h3>
                                 <div className="pl-2 border-l-2 border-slate-200 space-y-4">
-                                    {selectedTeacher.experience?.map(exp => (
-                                        <div key={exp.id} className="relative pl-4">
-                                            <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-slate-200 border-2 border-white"></div>
-                                            <p className="font-medium text-slate-900">{exp.position}</p>
-                                            <p className="text-sm text-slate-600">{exp.place}</p>
-                                            <p className="text-xs text-slate-400">{exp.start} — {exp.end}</p>
-                                        </div>
-                                    ))}
-                                    {(!selectedTeacher.experience || selectedTeacher.experience.length === 0) && (
-                                        <p className="text-sm text-slate-500 pl-4">Нет записей о работе.</p>
-                                    )}
+                                    <div className="relative pl-4">
+                                        <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-slate-200 border-2 border-white"></div>
+                                        <p className="font-medium text-slate-900">Общий стаж: {selectedTeacher.experience || 0} лет</p>
+                                    </div>
                                 </div>
                             </div>
 

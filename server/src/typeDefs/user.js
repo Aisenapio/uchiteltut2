@@ -2,6 +2,14 @@
 const { gql } = require('graphql-tag');
 
 const userTypeDefs = gql`
+  type Education {
+    id: ID!
+    institution: String
+    faculty: String
+    level: String
+    year: String
+  }
+
   type TeacherDetails {
     education: String
     experience: Int
@@ -32,6 +40,12 @@ const userTypeDefs = gql`
     district: String
     phone: String
     address: String
+    # Teacher-specific fields (computed from teacherDetails)
+    subjects: String
+    experience: Int
+    education: [Education!]
+    region: String
+    about: String
     # Detailed fields
     teacherDetails: TeacherDetails
     schoolDetails: SchoolDetails
@@ -77,6 +91,8 @@ const userTypeDefs = gql`
   input UserFilter {
     role: String
     search: String
+    subject: String
+    experience: String
   }
 
   type AuthPayload {

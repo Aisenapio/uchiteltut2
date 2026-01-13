@@ -23,6 +23,17 @@ const jobTypeDefs = gql`
     deadline: String
     isActive: Boolean!
     applicants: [User!]!
+    applications: [Application!]!
+  }
+
+  type Application {
+    id: ID!
+    teacher: User!
+    job: Job!
+    status: String!
+    appliedAt: String!
+    updatedAt: String!
+    message: String
   }
 
   input JobInput {

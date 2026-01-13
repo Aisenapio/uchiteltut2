@@ -206,6 +206,17 @@ export const FIND_TEACHERS = gql`
       lastName
       email
       role
+      subjects
+      experience
+      education {
+        id
+        institution
+        faculty
+        level
+        year
+      }
+      region
+      about
       teacherDetails {
         education
         experience
@@ -221,5 +232,137 @@ export const FIND_TEACHERS = gql`
 export const GET_SUPPORT_OPTIONS = gql`
   query GetSupportOptions {
     supportOptions
+  }
+`;
+
+// Get job applications
+export const GET_JOB_APPLICATIONS = gql`
+  query GetJobApplications($jobId: ID!) {
+    jobApplications(jobId: $jobId) {
+      id
+      status
+      appliedAt
+      updatedAt
+      message
+      teacher {
+        id
+        firstName
+        lastName
+        email
+        teacherDetails {
+          education
+          experience
+          subjects
+          certifications
+          resume
+        }
+      }
+      job {
+        id
+        position
+        salary
+        hours
+        location
+        subject
+        school {
+          id
+          name
+          district
+          phone
+          address
+          email
+        }
+        openDate
+        status
+      }
+    }
+  }
+`;
+
+// Update application status
+export const UPDATE_APPLICATION_STATUS = gql`
+  mutation UpdateApplicationStatus($applicationId: ID!, $status: String!) {
+    updateApplicationStatus(applicationId: $applicationId, status: $status) {
+      id
+      status
+      appliedAt
+      updatedAt
+      message
+      teacher {
+        id
+        firstName
+        lastName
+        email
+        teacherDetails {
+          education
+          experience
+          subjects
+          certifications
+          resume
+        }
+      }
+      job {
+        id
+        position
+        salary
+        hours
+        location
+        subject
+        school {
+          id
+          name
+          district
+          phone
+          address
+          email
+        }
+        openDate
+        status
+      }
+    }
+  }
+`;
+
+// Add application message
+export const ADD_APPLICATION_MESSAGE = gql`
+  mutation AddApplicationMessage($applicationId: ID!, $message: String!) {
+    addApplicationMessage(applicationId: $applicationId, message: $message) {
+      id
+      status
+      appliedAt
+      updatedAt
+      message
+      teacher {
+        id
+        firstName
+        lastName
+        email
+        teacherDetails {
+          education
+          experience
+          subjects
+          certifications
+          resume
+        }
+      }
+      job {
+        id
+        position
+        salary
+        hours
+        location
+        subject
+        school {
+          id
+          name
+          district
+          phone
+          address
+          email
+        }
+        openDate
+        status
+      }
+    }
   }
 `;

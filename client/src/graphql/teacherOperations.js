@@ -69,25 +69,91 @@ export const SUBMIT_JOB_RESPONSE = gql`
   mutation SubmitJobResponse($jobId: ID!) {
     applyToJob(jobId: $jobId) {
       id
-      position
-      salary
-      hours
-      location
-      subject
-      school {
-        id
-        name
-        district
-        phone
-        address
-        email
-      }
-      openDate
       status
-      applicants {
+      appliedAt
+      updatedAt
+      message
+      teacher {
         id
         firstName
         lastName
+        email
+        teacherDetails {
+          education
+          experience
+          subjects
+          certifications
+          resume
+        }
+      }
+      job {
+        id
+        position
+        salary
+        hours
+        location
+        subject
+        school {
+          id
+          name
+          district
+          phone
+          address
+          email
+        }
+        openDate
+        status
+      }
+    }
+  }
+`;
+
+// Withdraw (cancel) job response
+export const WITHDRAW_JOB_RESPONSE = gql`
+  mutation WithdrawJobResponse($applicationId: ID!) {
+    withdrawApplication(applicationId: $applicationId)
+  }
+`;
+
+// Get teacher applications (new system)
+export const GET_TEACHER_APPLICATIONS = gql`
+  query GetTeacherApplications {
+    teacherApplications {
+      id
+      status
+      appliedAt
+      updatedAt
+      message
+      teacher {
+        id
+        firstName
+        lastName
+        email
+        teacherDetails {
+          education
+          experience
+          subjects
+          certifications
+          resume
+        }
+      }
+      job {
+        id
+        position
+        salary
+        hours
+        location
+        subject
+        school {
+          id
+          name
+          district
+          phone
+          address
+          email
+        }
+        openDate
+        status
       }
     }
   }

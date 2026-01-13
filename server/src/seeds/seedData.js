@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Job = require('../models/Job');
+const Application = require('../models/Application');
 const connectDB = require('../utils/connectDB');
 const mockData = require('./mock');
 
@@ -103,6 +104,7 @@ const seedData = async () => {
     console.log('Removing existing data...');
     await User.deleteMany({});
     await Job.deleteMany({});
+    await Application.deleteMany({});
     console.log('Existing data removed.');
 
     // Create hashed passwords for sample users
@@ -158,26 +160,40 @@ const seedData = async () => {
 
     // Optionally, add some applications
     console.log('Adding sample applications...');
+    const applications = [];
     for (let i = 0; i < insertedJobs.length; i++) {
       // Each job gets applications from 1-2 random teachers
       const numApplicants = Math.min(insertedTeachers.length, Math.floor(Math.random() * 2) + 1);
       const selectedTeachers = [];
-      
+
       for (let j = 0; j < numApplicants; j++) {
         let randomIndex;
         do {
           randomIndex = Math.floor(Math.random() * insertedTeachers.length);
         } while (selectedTeachers.includes(randomIndex));
-        
+
         selectedTeachers.push(randomIndex);
       }
-      
-      const applicantIds = selectedTeachers.map(idx => insertedTeachers[idx]._id);
-      await Job.findByIdAndUpdate(insertedJobs[i]._id, {
-        $push: { applicants: { $each: applicantIds } }
-      });
+
+      // Create Application documents for each applicant
+      for (const teacherIdx of selectedTeachers) {
+        const application = new Application({
+          teacher: insertedTeachers[teacherIdx]._id,
+          job: insertedJobs[i]._id,
+          status: 'pending',
+          appliedAt: new Date(),
+          updatedAt: new Date(),
+          message: ''
+        });
+        applications.push(application);
+      }
     }
-    console.log('Sample applications added.');
+
+    // Insert all applications
+    if (applications.length > 0) {
+      await Application.insertMany(applications);
+    }
+    console.log(`${applications.length} sample applications added.`);
 
     console.log('\nSeeding completed successfully!');
     console.log(`\nCreated ${insertedTeachers.length} teachers`);

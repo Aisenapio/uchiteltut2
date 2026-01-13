@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_VACANCY_BY_ID } from "@/graphql/schoolOperations";
-import { GET_TEACHER_PROFILE } from "@/graphql/teacherOperations";
+import { GET_TEACHER_PROFILE, SUBMIT_JOB_RESPONSE, WITHDRAW_JOB_RESPONSE, GET_TEACHER_APPLICATIONS } from "@/graphql/teacherOperations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, School, Banknote, Clock, Award, Phone, Mail } from "lucide-react";
-import { ApplicationModal } from "@/components/public/ApplicationModal"; // Import Modal
+import { toast } from "sonner";
 
 const JobDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
+    const [isApplying, setIsApplying] = useState(false);
 
     const { loading, error, data } = useQuery(GET_VACANCY_BY_ID, {
         variables: { id }
@@ -20,10 +20,43 @@ const JobDetail = () => {
     // Check if user is authenticated
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [hasResume, setHasResume] = useState(false);
+    const [hasApplied, setHasApplied] = useState(false);
+    const [applicationId, setApplicationId] = useState(null);
 
     // Get teacher profile if authenticated
     const { data: teacherData } = useQuery(GET_TEACHER_PROFILE, {
         skip: !isAuthenticated,
+    });
+
+    // Get teacher applications to check if already applied
+    const { data: applicationsData, refetch: refetchApplications } = useQuery(GET_TEACHER_APPLICATIONS, {
+        skip: !isAuthenticated,
+    });
+
+    // Mutation for submitting job response
+    const [submitJobResponse] = useMutation(SUBMIT_JOB_RESPONSE, {
+        onCompleted: (data) => {
+            setIsApplying(false);
+            toast.success("Отклик успешно отправлен!");
+            refetchApplications();
+        },
+        onError: (error) => {
+            setIsApplying(false);
+            toast.error(`Ошибка отправки отклика: ${error.message}`);
+        }
+    });
+
+    // Mutation for withdrawing job response
+    const [withdrawJobResponse] = useMutation(WITHDRAW_JOB_RESPONSE, {
+        onCompleted: () => {
+            setIsApplying(false);
+            toast.success("Отклик успешно отменен!");
+            refetchApplications();
+        },
+        onError: (error) => {
+            setIsApplying(false);
+            toast.error(`Ошибка отмены отклика: ${error.message}`);
+        }
     });
 
     const job = data?.job;
@@ -44,10 +77,43 @@ const JobDetail = () => {
         }
     }, [teacherData]);
 
-    const handleApplyClick = () => {
+    // Check if teacher has already applied to this job
+    useEffect(() => {
+        if (applicationsData?.teacherApplications && job) {
+            const application = applicationsData.teacherApplications.find(
+                app => app.job?.id === job.id
+            );
+            if (application) {
+                setHasApplied(true);
+                setApplicationId(application.id);
+            } else {
+                setHasApplied(false);
+                setApplicationId(null);
+            }
+        } else {
+            setHasApplied(false);
+            setApplicationId(null);
+        }
+    }, [applicationsData, job]);
+
+    const handleApplyClick = async () => {
         if (!isAuthenticated) {
             // Redirect to login page
-            navigate('/auth/login');
+            navigate('/login');
+            return;
+        }
+
+        if (hasApplied) {
+            // Withdraw application
+            if (!confirm('Вы уверены, что хотите отменить отклик?')) return;
+            setIsApplying(true);
+            try {
+                await withdrawJobResponse({
+                    variables: { applicationId }
+                });
+            } catch (error) {
+                // Error handling is done in onError callback
+            }
             return;
         }
 
@@ -57,8 +123,15 @@ const JobDetail = () => {
             return;
         }
 
-        // All checks passed, open the modal
-        setIsModalOpen(true);
+        // All checks passed, submit application
+        setIsApplying(true);
+        try {
+            await submitJobResponse({
+                variables: { jobId: id }
+            });
+        } catch (error) {
+            // Error handling is done in onError callback
+        }
     };
 
     if (loading) {
@@ -179,8 +252,12 @@ const JobDetail = () => {
                             </div>
                         </div>
 
-                        <Button onClick={handleApplyClick} className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground">
-                            Откликнуться
+                        <Button
+                            onClick={handleApplyClick}
+                            disabled={isApplying}
+                            className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground"
+                        >
+                            {isApplying ? (hasApplied ? "Отмена..." : "Отправка...") : (hasApplied ? "Отменить отклик" : "Откликнуться")}
                         </Button>
                         <p className="text-xs text-slate-400 text-center mt-3">
                             Отклик будет отправлен напрямую работодателю
@@ -189,18 +266,6 @@ const JobDetail = () => {
                 </div>
             </div>
 
-            {/* Modal */}
-            <ApplicationModal
-                job={{
-                    ...job,
-                    school: job.school?.name,
-                    region: job.school?.district,
-                    contacts: job.school?.phone,
-                    email: job.school?.email
-                }}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
         </div>
     );
 };

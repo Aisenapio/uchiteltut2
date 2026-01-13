@@ -1,6 +1,7 @@
 // src/resolvers/index.js
 const User = require('../models/User');
 const Job = require('../models/Job');
+const Application = require('../models/Application');
 const { generateToken, getUserIdFromToken } = require('../utils/auth');
 
 const resolvers = {
@@ -27,6 +28,17 @@ const resolvers = {
             { lastName: { $regex: filter.search, $options: 'i' } },
             { email: { $regex: filter.search, $options: 'i' } }
           ];
+        }
+        // Filter by subject (search in teacherDetails.subjects array)
+        if (filter.subject) {
+          query['teacherDetails.subjects'] = { $regex: filter.subject, $options: 'i' };
+        }
+        // Filter by experience (teacherDetails.experience >= value)
+        if (filter.experience) {
+          const expValue = parseInt(filter.experience);
+          if (!isNaN(expValue)) {
+            query['teacherDetails.experience'] = { $gte: expValue };
+          }
         }
       }
       return await User.find(query);
@@ -74,21 +86,47 @@ const resolvers = {
         }
       }
 
-      return await Job.find(query).populate('school').populate('applicants');
+      return await Job.find(query).populate('school');
     },
     
     job: async (_, { id }) => {
-      return await Job.findById(id).populate('school').populate('applicants');
+      return await Job.findById(id).populate('school');
     },
     
     myJobs: async (_, __, { user }) => {
       if (!user) throw new Error('Authentication required');
-      return await Job.find({ school: user._id }).populate('school').populate('applicants');
+      return await Job.find({ school: user._id }).populate('school');
     },
     
     myApplications: async (_, __, { user }) => {
       if (!user) throw new Error('Authentication required');
-      return await Job.find({ applicants: user._id }).populate('school').populate('applicants');
+      // Legacy query: returns Jobs that user has applied to (through Application model)
+      const applications = await Application.find({ teacher: user._id }).populate('job');
+      return applications.map(app => app.job);
+    },
+
+    teacherApplications: async (_, __, { user }) => {
+      if (!user) throw new Error('Authentication required');
+      if (user.role !== 'teacher') throw new Error('Only teachers can view their applications');
+      return await Application.find({ teacher: user._id })
+        .populate('teacher')
+        .populate('job');
+    },
+
+    jobApplications: async (_, { jobId }, { user }) => {
+      if (!user) throw new Error('Authentication required');
+      if (user.role !== 'school') throw new Error('Only schools can view job applications');
+
+      // Verify that the job belongs to the school
+      const job = await Job.findById(jobId);
+      if (!job) throw new Error('Job not found');
+      if (job.school.toString() !== user._id.toString()) {
+        throw new Error('You can only view applications for your own jobs');
+      }
+
+      return await Application.find({ job: jobId })
+        .populate('teacher')
+        .populate('job');
     },
 
     // Support options
@@ -218,7 +256,7 @@ const resolvers = {
       
       await job.save();
       
-      return await Job.findById(job._id).populate('school').populate('applicants');
+      return await Job.findById(job._id).populate('school');
     },
     
     updateJob: async (_, { id, input }, { user }) => {
@@ -232,7 +270,7 @@ const resolvers = {
         id,
         input,
         { new: true }
-      ).populate('school').populate('applicants');
+      ).populate('school');
       
       return updatedJob;
     },
@@ -251,20 +289,103 @@ const resolvers = {
     applyToJob: async (_, { jobId }, { user }) => {
       if (!user) throw new Error('Authentication required');
       if (user.role !== 'teacher') throw new Error('Only teachers can apply to jobs');
-      
+
       const job = await Job.findById(jobId);
       if (!job) throw new Error('Job not found');
-      
-      // Check if user already applied
-      if (job.applicants.includes(user._id)) {
+
+      // Check if user already applied (using Application model)
+      const existingApplication = await Application.findOne({
+        teacher: user._id,
+        job: jobId
+      });
+
+      if (existingApplication) {
         throw new Error('You have already applied to this job');
       }
-      
-      // Add user to applicants
-      job.applicants.push(user._id);
-      await job.save();
-      
-      return await Job.findById(jobId).populate('school').populate('applicants');
+
+      // Create new application
+      const application = new Application({
+        teacher: user._id,
+        job: jobId,
+        status: 'pending',
+        message: ''
+      });
+
+      await application.save();
+
+      // Return populated application
+      return await Application.findById(application._id)
+        .populate('teacher')
+        .populate('job');
+    },
+
+    updateApplicationStatus: async (_, { applicationId, status }, { user }) => {
+      if (!user) throw new Error('Authentication required');
+      if (user.role !== 'school') throw new Error('Only schools can update application status');
+
+      // Validate status
+      const validStatuses = ['pending', 'invited', 'rejected'];
+      if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+      }
+
+      const application = await Application.findById(applicationId)
+        .populate('teacher')
+        .populate('job');
+
+      if (!application) throw new Error('Application not found');
+
+      // Verify that the job belongs to the school
+      const job = await Job.findById(application.job._id);
+      if (job.school.toString() !== user._id.toString()) {
+        throw new Error('You can only update applications for your own jobs');
+      }
+
+      application.status = status;
+      application.updatedAt = Date.now();
+      await application.save();
+
+      return application;
+    },
+
+    addApplicationMessage: async (_, { applicationId, message }, { user }) => {
+      if (!user) throw new Error('Authentication required');
+      if (user.role !== 'school') throw new Error('Only schools can add messages to applications');
+
+      const application = await Application.findById(applicationId)
+        .populate('teacher')
+        .populate('job');
+
+      if (!application) throw new Error('Application not found');
+
+      // Verify that the job belongs to the school
+      const job = await Job.findById(application.job._id);
+      if (job.school.toString() !== user._id.toString()) {
+        throw new Error('You can only add messages to applications for your own jobs');
+      }
+
+      application.message = message;
+      application.updatedAt = Date.now();
+      await application.save();
+
+      return application;
+    },
+
+    withdrawApplication: async (_, { applicationId }, { user }) => {
+      if (!user) throw new Error('Authentication required');
+      if (user.role !== 'teacher') throw new Error('Only teachers can withdraw their applications');
+
+      const application = await Application.findById(applicationId);
+
+      if (!application) throw new Error('Application not found');
+
+      // Verify that the application belongs to the teacher
+      if (application.teacher.toString() !== user._id.toString()) {
+        throw new Error('You can only withdraw your own applications');
+      }
+
+      await Application.findByIdAndDelete(applicationId);
+      return true;
     }
   },
   
@@ -305,6 +426,42 @@ const resolvers = {
         return parent.schoolDetails || null;
       }
       return null;
+    },
+    // Additional fields for teacher profile display
+    subjects: (parent) => {
+      if (parent.role === 'teacher' && parent.teacherDetails?.subjects) {
+        // Return as comma-separated string for display
+        return parent.teacherDetails.subjects.join(', ');
+      }
+      return null;
+    },
+    experience: (parent) => {
+      if (parent.role === 'teacher' && parent.teacherDetails?.experience) {
+        return parent.teacherDetails.experience;
+      }
+      return 0;
+    },
+    education: (parent) => {
+      if (parent.role === 'teacher' && parent.teacherDetails?.education) {
+        // Parse education string into array of objects for compatibility
+        // Assuming education is stored as a string, return as array with one object
+        return [{
+          id: '1',
+          institution: parent.teacherDetails.education,
+          faculty: '',
+          level: '',
+          year: ''
+        }];
+      }
+      return [];
+    },
+    region: (parent) => {
+      // Not stored in current model, return null
+      return null;
+    },
+    about: (parent) => {
+      // Not stored in current model, return empty string
+      return '';
     }
   },
   
@@ -314,7 +471,15 @@ const resolvers = {
     },
 
     applicants: async (parent) => {
-      return await User.find({ _id: { $in: parent.applicants } });
+      // Get teachers who applied through Application model
+      const applications = await Application.find({ job: parent._id }).populate('teacher');
+      return applications.map(app => app.teacher);
+    },
+
+    applications: async (parent) => {
+      return await Application.find({ job: parent._id })
+        .populate('teacher')
+        .populate('job');
     },
 
     // Convert Date fields to ISO strings
@@ -330,6 +495,16 @@ const resolvers = {
     // Ensure status is string
     status: (parent) => {
       return parent.status || 'open';
+    }
+  },
+
+  Application: {
+    // Convert Date fields to ISO strings
+    appliedAt: (parent) => {
+      return parent.appliedAt ? parent.appliedAt.toISOString() : null;
+    },
+    updatedAt: (parent) => {
+      return parent.updatedAt ? parent.updatedAt.toISOString() : null;
     }
   }
 };

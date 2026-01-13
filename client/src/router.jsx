@@ -21,6 +21,7 @@ import MyVacancies from "@/pages/main/school/MyVacancies";
 import EditVacancy from "@/pages/main/school/EditVacancy";
 import FindTeachers from "@/pages/main/school/FindTeachers";
 import SchoolProfile from "@/pages/main/school/Profile";
+import JobApplications from "@/pages/main/school/JobApplications";
 
 import TeacherDashboardLayout from "@/pages/main/teacher/layout";
 import TeacherProfile from "@/pages/main/teacher/Profile";
@@ -68,6 +69,7 @@ const Router = () => {
                 <Route index element={<MyVacancies />} />
                 <Route path="vacancies/new" element={<EditVacancy />} />
                 <Route path="vacancies/:id" element={<EditVacancy />} />
+                <Route path="vacancies/:id/applications" element={<JobApplications />} />
                 <Route path="teachers" element={<FindTeachers />} />
                 <Route path="profile" element={<SchoolProfile />} />
               </Route>

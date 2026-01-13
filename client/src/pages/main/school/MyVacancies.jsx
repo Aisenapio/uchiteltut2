@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from '@apollo/client/react';
 import { GET_MY_VACANCIES, DELETE_VACANCY } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import {
     Table,
@@ -82,8 +82,13 @@ const MyVacancies = () => {
                                     <TableCell>{new Date(job.openDate).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
+                                            <Link to={`/dashboard/school/vacancies/${job.id}/applications`}>
+                                                <Button variant="ghost" size="icon" title="Просмотреть отклики">
+                                                    <Eye className="h-4 w-4 text-slate-500" />
+                                                </Button>
+                                            </Link>
                                             <Link to={`/dashboard/school/vacancies/${job.id}`}>
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="ghost" size="icon" title="Редактировать">
                                                     <Pencil className="h-4 w-4 text-slate-500" />
                                                 </Button>
                                             </Link>
@@ -92,6 +97,7 @@ const MyVacancies = () => {
                                                 size="icon"
                                                 className="hover:text-red-600"
                                                 onClick={() => handleDelete(job.id)}
+                                                title="Удалить"
                                             >
                                                 <Trash2 className="h-4 w-4 text-slate-500" />
                                             </Button>
