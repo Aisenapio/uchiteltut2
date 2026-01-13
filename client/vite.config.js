@@ -18,7 +18,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3001,
     strictPort: true,
-    allowedHosts: ['rflow.ru.tuna.am'],
+    allowedHosts: ['teachers.ru.tuna.am'],
   },
   server: {
     host: '0.0.0.0',

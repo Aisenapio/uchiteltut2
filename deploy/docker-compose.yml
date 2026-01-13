@@ -13,8 +13,11 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
       MONGO_INITDB_DATABASE: teachers
+    command: mongod --bind_ip_all
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - teachers-network
 
   # Node.js сервер (GraphQL API)
   server:
