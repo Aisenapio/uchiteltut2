@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save, Upload, FileText, Briefcase, GraduationCap, Download } from "lucide-react";
 
-const UPLOAD_SERVER_URL = 'http://localhost:4000/upload';
+// В production используем относительный путь /upload (проксируется через nginx)
+// В development используем прямой URL к серверу
+const UPLOAD_SERVER_URL = import.meta.env.PROD
+  ? '/upload'
+  : (import.meta.env.VITE_UPLOADS_URL || 'http://localhost:4000/upload');
 
 export default function TeacherProfile() {
     const fileInputRef = useRef(null);

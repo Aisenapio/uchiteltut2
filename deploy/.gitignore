@@ -1,0 +1,6 @@
+# Environment files with sensitive data
+.env
+*.env
+
+# Docker Compose override files
+docker-compose.override.yml

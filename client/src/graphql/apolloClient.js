@@ -2,8 +2,14 @@ import { ApolloClient, InMemoryCache, HttpLink  } from '@apollo/client';
 import { SetContextLink } from '@apollo/client/link/context';
 
 // 1. Создаем HTTP-ссылку для подключения к GraphQL API
+// В production используем относительный путь /graphql (проксируется через nginx)
+// В development используем прямой URL к серверу
+const graphqlUri = import.meta.env.PROD
+  ? '/graphql'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql');
+
 const httpLink = new HttpLink({
-  uri: 'http://localhost:4000/graphql',
+  uri: graphqlUri,
 });
 
 // 2. Создаем ссылку для аутентификации с автоматическим добавлением токена

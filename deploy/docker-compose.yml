@@ -16,6 +16,76 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  # Node.js сервер (GraphQL API)
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: server
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:admin123@mongodb_teachers:27017/teachers?authSource=admin
+      - JWT_SECRET=${JWT_SECRET:-your_super_secret_jwt_key_change_in_production}
+      - PORT=4000
+    restart: unless-stopped
+    depends_on:
+      - mongodb_teachers
+    volumes:
+      - ../uploads:/app/uploads
+    networks:
+      - teachers-network
+
+  # React клиент
+  client:
+    build:
+      context: ../client
+      dockerfile: Dockerfile
+    container_name: client
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=/graphql
+      - VITE_UPLOADS_URL=/uploads
+    restart: unless-stopped
+    depends_on:
+      - server
+    networks:
+      - teachers-network
+
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - client
+      - server
+    restart: unless-stopped
+    networks:
+      - teachers-network
+
+  # Tuna tunnel (optional)
+  tuna:
+    image: yuccastream/tuna:latest
+    container_name: tuna
+    env_file:
+      - .env
+    command: http nginx:80 --subdomain=teachers --inspect=false
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    environment:
+      - TUNA_TOKEN=${TUNA_TOKEN}
+      - TUNA_SUBDOMAIN=teachers
+    networks:
+      - teachers-network
+
 volumes:
   mongodb_data:
     driver: local
+
+networks:
+  teachers-network:
+    driver: bridge

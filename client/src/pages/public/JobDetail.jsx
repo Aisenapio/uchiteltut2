@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_VACANCY_BY_ID } from "@/graphql/schoolOperations";
 import { GET_TEACHER_PROFILE, SUBMIT_JOB_RESPONSE, WITHDRAW_JOB_RESPONSE, GET_TEACHER_APPLICATIONS } from "@/graphql/teacherOperations";
+import { GET_CURRENT_USER } from "@/graphql/authOperations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, School, Banknote, Clock, Award, Phone, Mail } from "lucide-react";
@@ -22,6 +23,11 @@ const JobDetail = () => {
     const [hasResume, setHasResume] = useState(false);
     const [hasApplied, setHasApplied] = useState(false);
     const [applicationId, setApplicationId] = useState(null);
+
+    // Get current user data (role, etc.)
+    const { data: currentUserData } = useQuery(GET_CURRENT_USER, {
+        skip: !isAuthenticated,
+    });
 
     // Get teacher profile if authenticated
     const { data: teacherData } = useQuery(GET_TEACHER_PROFILE, {
@@ -59,6 +65,7 @@ const JobDetail = () => {
         }
     });
 
+    const userRole = currentUserData?.currentUser?.role;
     const job = data?.job;
 
     // Check authentication on component mount
@@ -238,30 +245,34 @@ const JobDetail = () => {
                         <div className="space-y-4 mb-6">
                             <div className="flex items-center gap-3">
                                 <Phone className="w-5 h-5 text-slate-400" />
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-xs text-slate-500">Телефон</p>
                                     <p className="font-medium text-slate-900">{job.school?.phone}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-slate-400" />
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-xs text-slate-500">Email</p>
-                                    <a href={`mailto:${job.school?.email}`} className="font-medium text-primary hover:underline">{job.school?.email}</a>
+                                    <a href={`mailto:${job.school?.email}`} className="font-medium text-primary hover:underline break-words whitespace-normal max-w-full">{job.school?.email}</a>
                                 </div>
                             </div>
                         </div>
 
-                        <Button
-                            onClick={handleApplyClick}
-                            disabled={isApplying}
-                            className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground"
-                        >
-                            {isApplying ? (hasApplied ? "Отмена..." : "Отправка...") : (hasApplied ? "Отменить отклик" : "Откликнуться")}
-                        </Button>
-                        <p className="text-xs text-slate-400 text-center mt-3">
-                            Отклик будет отправлен напрямую работодателю
-                        </p>
+                        {!(isAuthenticated && userRole === 'school') && (
+                            <>
+                                <Button
+                                    onClick={handleApplyClick}
+                                    disabled={isApplying}
+                                    className="w-full bg-primary hover:bg-primary/90 h-12 text-lg text-primary-foreground"
+                                >
+                                    {isApplying ? (hasApplied ? "Отмена..." : "Отправка...") : (hasApplied ? "Отменить отклик" : "Откликнуться")}
+                                </Button>
+                                <p className="text-xs text-slate-400 text-center mt-3">
+                                    Отклик будет отправлен напрямую работодателю
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

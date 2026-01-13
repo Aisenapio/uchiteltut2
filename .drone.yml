@@ -1,0 +1,30 @@
+kind: pipeline
+type: exec
+name: update-docker-compose
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: update-docker-compose
+    environment:
+      TUNA_TOKEN:
+        from_secret: TUNA_TOKEN
+    commands:
+      - cd deploy
+      - |
+        cat > .env << EOF
+        TUNA_TOKEN=${TUNA_TOKEN}
+        EOF
+      - docker compose down
+      - docker compose up -d --build
+
+when:
+  branch: main
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
