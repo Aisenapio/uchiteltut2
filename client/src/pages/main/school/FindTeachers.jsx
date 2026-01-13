@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from '@apollo/client/react';
+import { useState, useEffect } from "react";
+import { useLazyQuery } from '@apollo/client/react';
 import { FIND_TEACHERS } from '@/graphql/schoolOperations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +11,36 @@ import { GraduationCap, MapPin, Briefcase, Search, FileText, Download } from "lu
 const FindTeachers = () => {
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [filters, setFilters] = useState({ subject: "", experience: "" });
+    const [searchFilters, setSearchFilters] = useState({ role: "teacher", subject: "", experience: "" });
     const [visibleCount, setVisibleCount] = useState(25);
 
-    const { loading, error, data } = useQuery(FIND_TEACHERS, {
-        variables: {
-            filter: {
-                subject: filters.subject,
-                experience: filters.experience
-            }
-        }
-    });
+    const [executeSearch, { loading, error, data }] = useLazyQuery(FIND_TEACHERS);
+
+    // Initial load on component mount
+    useEffect(() => {
+        executeSearch({ variables: { filter: searchFilters } });
+    }, [executeSearch]); // Only run once on mount
 
     if (loading) return <div className="p-6">Загрузка учителей...</div>;
     if (error) return <div className="p-6">Ошибка: {error.message}</div>;
 
-    const allTeachers = data?.teachers || [];
+    const allTeachers = data?.users || [];
     const visibleTeachers = allTeachers.slice(0, visibleCount);
 
     const handleLoadMore = () => {
         setVisibleCount(prev => prev + 25);
+    };
+
+    const handleSearch = () => {
+        setSearchFilters({ role: "teacher", subject: filters.subject, experience: filters.experience });
+        setVisibleCount(25); // Reset pagination on new search
+        executeSearch({ variables: { filter: { role: "teacher", subject: filters.subject, experience: filters.experience } } });
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
     };
 
     return (
@@ -45,11 +56,16 @@ const FindTeachers = () => {
                         placeholder="Предмет (например, Математика)"
                         value={filters.subject}
                         onChange={e => setFilters({ ...filters, subject: e.target.value })}
+                        onKeyDown={handleKeyDown}
                         className="bg-slate-50"
                     />
                 </div>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Search className="mr-2 h-4 w-4" /> Найти
+                <Button
+                    onClick={handleSearch}
+                    disabled={loading}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                    <Search className="mr-2 h-4 w-4" /> {loading ? "Поиск..." : "Найти"}
                 </Button>
             </div>
 
@@ -61,7 +77,9 @@ const FindTeachers = () => {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <CardTitle className="text-lg text-blue-900">{teacher.firstName} {teacher.lastName}</CardTitle>
-                                        <CardDescription className="font-medium text-slate-700">{teacher.subjects}</CardDescription>
+                                        {teacher.subjects && teacher.subjects.trim() && (
+                                            <CardDescription className="font-medium text-slate-700">{teacher.subjects}</CardDescription>
+                                        )}
                                     </div>
                                     <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
                                         <GraduationCap className="h-5 w-5" />
@@ -73,19 +91,25 @@ const FindTeachers = () => {
                                     <Briefcase className="h-4 w-4" />
                                     <span>Опыт: {teacher.experience || 0} лет</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <GraduationCap className="h-4 w-4" />
-                                    <span className="line-clamp-1">{teacher.education[0]?.institution || "Нет данных"}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{teacher.region}</span>
-                                </div>
-                                <div className="pt-2">
-                                    <p className="text-slate-500 italic line-clamp-2">"{teacher.about}"</p>
-                                </div>
+                                {teacher.education && teacher.education.length > 0 && teacher.education[0]?.institution && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <GraduationCap className="h-4 w-4" />
+                                        <span className="line-clamp-1">{teacher.education[0].institution}</span>
+                                    </div>
+                                )}
+                                {teacher.region && (
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <MapPin className="h-4 w-4" />
+                                        <span>{teacher.region}</span>
+                                    </div>
+                                )}
+                                {teacher.about && (
+                                    <div className="pt-2">
+                                        <p className="text-slate-500 italic line-clamp-2">"{teacher.about}"</p>
+                                    </div>
+                                )}
                                 <Button className="w-full mt-2" variant="outline">
-                                    Посмотреть резюме
+                                    Подробнее
                                 </Button>
                             </CardContent>
                         </Card>
@@ -105,9 +129,11 @@ const FindTeachers = () => {
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-2xl">{selectedTeacher?.name}</DialogTitle>
-                        <DialogDescription className="text-lg text-primary font-medium">
-                            {selectedTeacher?.subjects}
-                        </DialogDescription>
+                        {selectedTeacher?.subjects && selectedTeacher.subjects.trim() && (
+                            <DialogDescription className="text-lg text-primary font-medium">
+                                {selectedTeacher.subjects}
+                            </DialogDescription>
+                        )}
                     </DialogHeader>
 
                     {selectedTeacher && (
@@ -117,13 +143,19 @@ const FindTeachers = () => {
                                 <div>
                                     <h3 className="font-semibold mb-2">Контакты</h3>
                                     <p className="text-sm">Email: {selectedTeacher.email}</p>
-                                    <p className="text-sm">Телефон: {selectedTeacher.phone}</p>
-                                    <p className="text-sm">Регион: {selectedTeacher.region}</p>
+                                    {selectedTeacher.phone && (
+                                        <p className="text-sm">Телефон: {selectedTeacher.phone}</p>
+                                    )}
+                                    {selectedTeacher.region && (
+                                        <p className="text-sm">Регион: {selectedTeacher.region}</p>
+                                    )}
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold mb-2">О себе</h3>
-                                    <p className="text-sm text-slate-600">{selectedTeacher.about}</p>
-                                </div>
+                                {selectedTeacher.about && (
+                                    <div>
+                                        <h3 className="font-semibold mb-2">О себе</h3>
+                                        <p className="text-sm text-slate-600">{selectedTeacher.about}</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Resume Download */}

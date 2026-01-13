@@ -32,13 +32,21 @@ const resolvers = {
         // Filter by subject (search in teacherDetails.subjects array)
         if (filter.subject) {
           query['teacherDetails.subjects'] = { $regex: filter.subject, $options: 'i' };
+          // Ensure teacherDetails exists when filtering by subject
+          query.teacherDetails = { $exists: true };
         }
         // Filter by experience (teacherDetails.experience >= value)
         if (filter.experience) {
           const expValue = parseInt(filter.experience);
           if (!isNaN(expValue)) {
             query['teacherDetails.experience'] = { $gte: expValue };
+            // Ensure teacherDetails exists when filtering by experience
+            query.teacherDetails = { $exists: true };
           }
+        }
+        // If both subject and experience are empty but role is teacher, still ensure teacherDetails exists
+        if (filter.role === 'teacher' && !filter.subject && !filter.experience) {
+          query.teacherDetails = { $exists: true };
         }
       }
       return await User.find(query);
@@ -443,8 +451,23 @@ const resolvers = {
     },
     education: (parent) => {
       if (parent.role === 'teacher' && parent.teacherDetails?.education) {
-        // Parse education string into array of objects for compatibility
-        // Assuming education is stored as a string, return as array with one object
+        try {
+          // Try to parse education as JSON array
+          const educationData = JSON.parse(parent.teacherDetails.education);
+          if (Array.isArray(educationData)) {
+            return educationData.map((edu, index) => ({
+              id: String(index + 1),
+              institution: edu.institution || '',
+              faculty: edu.faculty || '',
+              level: edu.level || '',
+              year: edu.year || ''
+            }));
+          }
+        } catch (e) {
+          // If parsing fails, treat education as plain string
+          console.warn('Failed to parse education JSON:', e.message);
+        }
+        // Fallback: return education string as single institution
         return [{
           id: '1',
           institution: parent.teacherDetails.education,
