@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react"
+import { ApolloProvider } from '@apollo/client';
+import client from '@/graphql/apolloClient';
 import SearchProvider from "@/components/search-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -18,13 +20,15 @@ export function Providers({ children }) {
     }, [])
 
     return (
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            <SearchProvider value={{ open, setOpen }}>{children}</SearchProvider>
-        </ThemeProvider>
+        <ApolloProvider client={client}>
+            <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+            >
+                <SearchProvider value={{ open, setOpen }}>{children}</SearchProvider>
+            </ThemeProvider>
+        </ApolloProvider>
     )
 }
