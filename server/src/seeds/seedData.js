@@ -4,144 +4,98 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Job = require('../models/Job');
 const connectDB = require('../utils/connectDB');
+const mockData = require('./mock');
 
 require('dotenv').config();
 
 // Connect to DB
 connectDB();
 
-// Sample data
-const sampleTeachers = [
-  {
-    email: 'ivan.petrov@example.com',
-    firstName: 'Иван',
-    lastName: 'Петров',
-    password: 'password123',
-    role: 'teacher',
-    teacherDetails: {
-      education: 'Высшее образование, Московский Педагогический Университет',
-      experience: 5,
-      subjects: ['Математика', 'Физика'],
-      certifications: ['Сертификат по преподаванию математики', 'Сертификат по физике'],
-      resume: 'https://example.com/resumes/ivan_petrov.pdf'
-    }
-  },
-  {
-    email: 'maria.sidorova@example.com',
-    firstName: 'Мария',
-    lastName: 'Сидорова',
-    password: 'password123',
-    role: 'teacher',
-    teacherDetails: {
-      education: 'Высшее образование, Санкт-Петербургский Университет',
-      experience: 3,
-      subjects: ['Русский язык', 'Литература'],
-      certifications: ['Сертификат по русскому языку как иностранному'],
-      resume: 'https://example.com/resumes/maria_sidorova.pdf'
-    }
-  },
-  {
-    email: 'alexander.volkov@example.com',
-    firstName: 'Александр',
-    lastName: 'Волков',
-    password: 'password123',
-    role: 'teacher',
-    teacherDetails: {
-      education: 'Высшее образование, Новосибирский Педагогический Институт',
-      experience: 8,
-      subjects: ['История', 'Обществознание'],
-      certifications: ['Сертификат по преподаванию истории'],
-      resume: 'https://example.com/resumes/alexander_volkov.pdf'
-    }
-  }
-];
+// Transform mock data to database schema
+const { jobs: mockJobs, teachers: mockTeachers, schools: mockSchools } = mockData;
 
-const sampleSchools = [
-  {
-    email: 'admin@gymnasium1.edu.ru',
-    firstName: 'Школа',
-    lastName: 'Гимназия №1',
-    password: 'password123',
-    role: 'school',
-    schoolDetails: {
-      name: 'Гимназия №1',
-      address: 'г. Москва, ул. Ленина, д. 15',
-      phone: '+7 (495) 123-45-67',
-      website: 'https://gymnasium1.edu.ru',
-      description: 'Престижная гимназия с углубленным изучением математики и физики'
-    }
-  },
-  {
-    email: 'contact@lyceum21.edu.ru',
-    firstName: 'Лицей',
-    lastName: 'Лицей №21',
-    password: 'password123',
-    role: 'school',
-    schoolDetails: {
-      name: 'Лицей №21',
-      address: 'г. Санкт-Петербург, пр. Невский, д. 100',
-      phone: '+7 (812) 987-65-43',
-      website: 'https://lyceum21.edu.ru',
-      description: 'Лицей с уклоном в гуманитарные науки и иностранные языки'
-    }
-  },
-  {
-    email: 'info@school38.edu.ru',
-    firstName: 'Школа',
-    lastName: 'Школа №38',
-    password: 'password123',
-    role: 'school',
-    schoolDetails: {
-      name: 'Школа №38',
-      address: 'г. Новосибирск, ул. Советская, д. 45',
-      phone: '+7 (383) 111-22-33',
-      website: 'https://school38.edu.ru',
-      description: 'Современная школа с инновационными методами обучения'
-    }
-  }
-];
+// Transform mock teachers to User schema
+const sampleTeachers = mockTeachers.map((teacher, index) => {
+  // Split full name into first and last name (simplified)
+  const nameParts = teacher.name.split(' ');
+  const firstName = nameParts[1] || 'Учитель';
+  const lastName = nameParts[0] || `Teacher${index}`;
 
-const sampleJobs = [
-  {
-    title: 'Учитель математики',
-    description: 'Требуется опытный учитель математики для работы в 5-11 классах. Необходимо иметь высшее педагогическое образование и опыт работы не менее 2 лет.',
+  // Convert education array to JSON string
+  const educationStr = teacher.education && teacher.education.length > 0
+    ? JSON.stringify(teacher.education)
+    : JSON.stringify([]);
+
+  // Convert experience array to total years (simplified)
+  const totalExperience = teacher.experienceYears || Math.floor(Math.random() * 30);
+
+  // Create teacher details
+  const teacherDetails = {
+    education: educationStr,
+    experience: totalExperience,
+    subjects: teacher.subject ? [teacher.subject] : [],
+    certifications: [],
+    resume: teacher.resumeFile ? `/uploads/${teacher.resumeFile}` : null
+  };
+
+  return {
+    email: teacher.email || `teacher${index}@example.com`,
+    firstName,
+    lastName,
+    password: 'password123',
+    role: 'teacher',
+    teacherDetails
+  };
+});
+
+// Use mock schools (already in correct format)
+const sampleSchools = mockSchools;
+
+// Transform mock jobs to Job schema and map schools
+const sampleJobs = mockJobs.map((job, index) => {
+  // Extract numeric hours from string like "18 часов"
+  const hoursMatch = job.hours ? job.hours.match(/\d+/) : null;
+  const hours = hoursMatch ? parseInt(hoursMatch[0], 10) : 18;
+
+  // Convert duties string to array
+  const duties = job.duties ? [job.duties] : [];
+
+  // Convert benefits string to array
+  const benefits = job.benefits ? [job.benefits] : [];
+
+  // Parse openDate string to Date
+  const openDate = job.openDate ? new Date(job.openDate) : new Date();
+
+  // Create deadline (30 days from open date)
+  const deadline = new Date(openDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  return {
+    title: job.position || `Вакансия ${index + 1}`,
+    description: job.duties || `Требуется ${job.position || 'учитель'}.`,
     requirements: [
       'Высшее педагогическое образование',
       'Опыт работы от 2 лет',
-      'Знание современных методик преподавания',
-      'Наличие действующего сертификата преподавателя'
+      'Знание современных методик преподавания'
     ],
-    salary: 'от 70 000 до 100 000 руб.',
-    location: 'г. Москва, ул. Ленина, д. 15',
-    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-  },
-  {
-    title: 'Учитель русского языка и литературы',
-    description: 'Открыт набор на должность учителя русского языка и литературы. Работа в 1-11 классах. График работы 5/2.',
-    requirements: [
-      'Высшее гуманитарное образование',
-      'Опыт преподавания от 1 года',
-      'Отличное знание русского языка',
-      'Навыки работы с детьми разного возраста'
-    ],
-    salary: 'от 65 000 до 85 000 руб.',
-    location: 'г. Санкт-Петербург, пр. Невский, д. 100',
-    deadline: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000) // 25 days from now
-  },
-  {
-    title: 'Учитель истории',
-    description: 'Требуется учитель истории для работы в 5-9 классах. Школа предоставляет все необходимые условия для работы.',
-    requirements: [
-      'Высшее историческое или педагогическое образование',
-      'Опыт работы приветствуется',
-      'Знание современных образовательных стандартов',
-      'Коммуникабельность и ответственность'
-    ],
-    salary: 'от 60 000 до 80 000 руб.',
-    location: 'г. Новосибирск, ул. Советская, д. 45',
-    deadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000) // 20 days from now
-  }
-];
+    salary: job.salary || 'от 50 000 руб.',
+    location: job.region || 'г. Якутск',
+    position: job.position || 'Учитель',
+    hours: hours,
+    duties: duties,
+    benefits: benefits,
+    support: job.support || null,
+    studentEmployment: job.studentEmployment || false,
+    openDate: openDate,
+    status: 'open',
+    subject: job.position ? job.position.replace('Учитель ', '') : null,
+    postedAt: new Date(),
+    deadline: deadline,
+    isActive: true,
+    // School ID will be assigned after schools are inserted
+    school: null, // placeholder for school ObjectId
+    schoolName: job.school // original school name for mapping
+  };
+});
 
 const seedData = async () => {
   try {
@@ -178,11 +132,26 @@ const seedData = async () => {
 
     // Insert jobs
     console.log('Inserting jobs...');
-    // Assign jobs to schools randomly
-    const jobsWithSchools = sampleJobs.map((job, index) => ({
-      ...job,
-      school: insertedSchools[index % insertedSchools.length]._id
-    }));
+
+    // Create mapping of school name to school ID
+    const schoolNameToId = {};
+    insertedSchools.forEach(school => {
+      if (school.schoolDetails && school.schoolDetails.name) {
+        schoolNameToId[school.schoolDetails.name] = school._id;
+      }
+    });
+
+    // Assign jobs to schools based on schoolName mapping
+    const jobsWithSchools = sampleJobs.map((job) => {
+      const { schoolName, ...jobData } = job;
+      const schoolId = schoolNameToId[schoolName] ||
+                      insertedSchools[Math.floor(Math.random() * insertedSchools.length)]._id;
+
+      return {
+        ...jobData,
+        school: schoolId
+      };
+    });
 
     const insertedJobs = await Job.insertMany(jobsWithSchools);
     console.log(`${insertedJobs.length} jobs inserted.`);

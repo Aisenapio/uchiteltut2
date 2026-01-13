@@ -33,7 +33,7 @@ const teacherSidebarData = {
             items: [
                 {
                     title: "Мое резюме",
-                    url: "/dashboard/teacher/profile",
+                    url: "/dashboard/teacher",
                     icon: User,
                 },
                 {

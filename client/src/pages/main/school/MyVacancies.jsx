@@ -53,50 +53,56 @@ const MyVacancies = () => {
                 </Link>
             </div>
 
-            <div className="rounded-md border bg-white">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Должность</TableHead>
-                            <TableHead>Зарплата</TableHead>
-                            <TableHead>Статус</TableHead>
-                            <TableHead>Дата</TableHead>
-                            <TableHead className="text-right">Действия</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {myJobs.map((job) => (
-                            <TableRow key={job.id}>
-                                <TableCell className="font-medium">{job.position}</TableCell>
-                                <TableCell>{job.salary}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                        {job.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{new Date(job.openDate).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Link to={`/dashboard/school/vacancies/${job.id}`}>
-                                            <Button variant="ghost" size="icon">
-                                                <Pencil className="h-4 w-4 text-slate-500" />
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="hover:text-red-600"
-                                            onClick={() => handleDelete(job.id)}
-                                        >
-                                            <Trash2 className="h-4 w-4 text-slate-500" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+            {myJobs.length === 0 ? (
+                <div className="text-center py-20 bg-slate-50 rounded-xl border border-dashed">
+                    <p className="text-slate-500">У вас пока нет открытых вакансий. Добавьте первую вакансию.</p>
+                </div>
+            ) : (
+                <div className="rounded-md border bg-white">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Должность</TableHead>
+                                <TableHead>Зарплата</TableHead>
+                                <TableHead>Статус</TableHead>
+                                <TableHead>Дата</TableHead>
+                                <TableHead className="text-right">Действия</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+                        </TableHeader>
+                        <TableBody>
+                            {myJobs.map((job) => (
+                                <TableRow key={job.id}>
+                                    <TableCell className="font-medium">{job.position}</TableCell>
+                                    <TableCell>{job.salary}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                            {job.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{new Date(job.openDate).toLocaleDateString()}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Link to={`/dashboard/school/vacancies/${job.id}`}>
+                                                <Button variant="ghost" size="icon">
+                                                    <Pencil className="h-4 w-4 text-slate-500" />
+                                                </Button>
+                                            </Link>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="hover:text-red-600"
+                                                onClick={() => handleDelete(job.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-slate-500" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </div>
     );
 };

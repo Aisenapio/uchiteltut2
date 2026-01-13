@@ -17,7 +17,7 @@ export default function MyResponses() {
     if (loading) return <div className="p-6">Загрузка откликов...</div>;
     if (error) return <div className="p-6">Ошибка: {error.message}</div>;
 
-    const responses = data?.jobResponses || [];
+    const responses = data?.myApplications || [];
 
     return (
         <div className="space-y-6">
@@ -32,39 +32,45 @@ export default function MyResponses() {
                     <CardDescription>Вы откликнулись на {responses.length} вакансий</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Вакансия</TableHead>
-                                <TableHead>Школа</TableHead>
-                                <TableHead>Дата отклика</TableHead>
-                                <TableHead>Статус</TableHead>
-                                <TableHead className="text-right">Действия</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {responses.map((response) => (
-                                <TableRow key={response.id}>
-                                    <TableCell className="font-medium">{response.job?.position || "Вакансия удалена"}</TableCell>
-                                    <TableCell>{response.job?.school || "Неизвестно"}</TableCell>
-                                    <TableCell>{response.date}</TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={statusMap[response.status].variant}
-                                            className={statusMap[response.status].color}
-                                        >
-                                            {statusMap[response.status].label}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">
-                                            Подробнее
-                                        </Button>
-                                    </TableCell>
+                    {responses.length === 0 ? (
+                        <div className="text-center py-20 bg-slate-50 rounded-xl border border-dashed">
+                            <p className="text-slate-500">Вы еще не откликались на вакансии. Найдите подходящую вакансию и отправьте отклик.</p>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Вакансия</TableHead>
+                                    <TableHead>Школа</TableHead>
+                                    <TableHead>Дата отклика</TableHead>
+                                    <TableHead>Статус</TableHead>
+                                    <TableHead className="text-right">Действия</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {responses.map((response) => (
+                                    <TableRow key={response.id}>
+                                        <TableCell className="font-medium">{response.position || "Вакансия удалена"}</TableCell>
+                                        <TableCell>{response.school?.name || "Неизвестно"}</TableCell>
+                                        <TableCell>{response.openDate || "Не указано"}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={statusMap[response.status].variant}
+                                                className={statusMap[response.status].color}
+                                            >
+                                                {statusMap[response.status].label}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="sm">
+                                                Подробнее
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>

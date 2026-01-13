@@ -31,7 +31,7 @@ const PublicHeader = () => {
                 <div className="flex flex-1 items-center justify-end space-x-4">
                     <nav className="flex items-center space-x-2">
                         {isTeacher && (
-                            <Link to="/dashboard/teacher/profile">
+                            <Link to="/dashboard/teacher">
                                 <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
                                     Составить резюме
                                 </Button>

@@ -13,7 +13,7 @@ export default function JobSearch() {
     const { loading, error, data } = useQuery(GET_ALL_JOBS, {
         variables: {
             filter: {
-                searchTerm: searchQuery
+                search: searchQuery
             }
         }
     });
@@ -22,19 +22,7 @@ export default function JobSearch() {
     if (error) return <div className="p-6">Ошибка: {error.message}</div>;
 
     const allJobs = data?.jobs || [];
-
-    // Filter jobs based on search query
-    const filteredJobs = useMemo(() => {
-        if (!searchQuery.trim()) return allJobs;
-        const lowerQuery = searchQuery.toLowerCase();
-        return allJobs.filter(job =>
-            job.position.toLowerCase().includes(lowerQuery) ||
-            job.school.toLowerCase().includes(lowerQuery) ||
-            job.region.toLowerCase().includes(lowerQuery)
-        );
-    }, [allJobs, searchQuery]);
-
-    const visibleJobs = filteredJobs.slice(0, visibleCount);
+    const visibleJobs = allJobs.slice(0, visibleCount);
 
     const handleLoadMore = () => {
         setVisibleCount(prev => prev + 12);
@@ -64,7 +52,7 @@ export default function JobSearch() {
 
             <div>
                 <h2 className="text-lg font-semibold mb-4">
-                    {searchQuery ? `Найдено: ${filteredJobs.length}` : "Все вакансии"}
+                    {searchQuery ? `Найдено: ${allJobs.length}` : "Все вакансии"}
                 </h2>
 
                 {visibleJobs.length > 0 ? (
@@ -75,7 +63,7 @@ export default function JobSearch() {
                             ))}
                         </div>
 
-                        {visibleCount < filteredJobs.length && (
+                        {visibleCount < allJobs.length && (
                             <div className="flex justify-center">
                                 <Button onClick={handleLoadMore} variant="outline">
                                     Показать еще

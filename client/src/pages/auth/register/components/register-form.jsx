@@ -70,20 +70,22 @@ export function RegisterForm({
     try {
       const response = await register({
         variables: {
-          email: data.email,
-          password: data.password,
-          role: data.role,
-          firstName: data.firstName,
-          lastName: data.lastName
+          input: {
+            email: data.email,
+            password: data.password,
+            role: data.role,
+            firstName: data.firstName,
+            lastName: data.lastName
+          }
         }
       });
 
       // Store the token in localStorage
-      const { token } = response.data.register;
+      const { token } = response.data.signup;
       localStorage.setItem('token', token);
 
       // Redirect based on user role
-      const { role } = response.data.register.user;
+      const { role } = response.data.signup.user;
       if (role === 'school') {
         navigate('/dashboard/school');
       } else if (role === 'teacher') {

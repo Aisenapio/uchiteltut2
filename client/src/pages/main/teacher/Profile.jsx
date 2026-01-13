@@ -33,6 +33,87 @@ export default function TeacherProfile() {
     const { loading, error, data } = useQuery(GET_TEACHER_PROFILE);
     const [updateTeacherProfile] = useMutation(UPDATE_TEACHER_PROFILE);
 
+    // Safe JSON parsing helper
+    const safeParseJSON = (value, fallback = []) => {
+        if (value == null) return fallback;
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : fallback;
+            } catch (e) {
+                console.warn('Failed to parse JSON, using fallback:', e.message);
+                return fallback;
+            }
+        }
+        // If value is a number (experience years), convert to array of one entry?
+        return fallback;
+    };
+
+    // Parse education field, handling plain strings and JSON arrays
+    const parseEducation = (value) => {
+        if (value == null) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) return parsed;
+                // If parsed is not array, treat as single education entry
+                return [{
+                    id: Date.now(),
+                    institution: parsed.institution || value,
+                    faculty: parsed.faculty || '',
+                    year: parsed.year || '',
+                    level: parsed.level || ''
+                }];
+            } catch (e) {
+                // Plain string, create a single education entry
+                return [{
+                    id: Date.now(),
+                    institution: value,
+                    faculty: '',
+                    year: '',
+                    level: ''
+                }];
+            }
+        }
+        return [];
+    };
+
+    // Parse experience field, handling numbers, JSON arrays, and plain strings
+    const parseExperience = (value) => {
+        if (value == null) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) return parsed;
+                // If parsed is not array, treat as single experience entry
+                return [{
+                    id: Date.now(),
+                    place: parsed.place || '',
+                    position: parsed.position || '',
+                    start: parsed.start || '',
+                    end: parsed.end || ''
+                }];
+            } catch (e) {
+                // Plain string, ignore
+                return [];
+            }
+        }
+        if (typeof value === 'number') {
+            // Convert years of experience to a single entry
+            return [{
+                id: Date.now(),
+                place: 'Опыт работы',
+                position: `Стаж ${value} лет`,
+                start: '',
+                end: ''
+            }];
+        }
+        return [];
+    };
+
     useEffect(() => {
         if (data?.me) {
             const teacherDetails = data.me.teacherDetails || {};
@@ -42,8 +123,8 @@ export default function TeacherProfile() {
                 lastName: data.me.lastName || "",
                 email: data.me.email || "",
                 // Map teacherDetails fields
-                education: teacherDetails.education ? JSON.parse(teacherDetails.education) : [],
-                experience: teacherDetails.experience ? JSON.parse(teacherDetails.experience) : [],
+                education: parseEducation(teacherDetails.education),
+                experience: parseExperience(teacherDetails.experience),
                 subjects: teacherDetails.subjects ? teacherDetails.subjects.join(', ') : "",
                 // Handle resume
                 resumeFileName: teacherDetails.resume ? "resume.pdf" : null,
@@ -161,7 +242,7 @@ export default function TeacherProfile() {
             // Prepare teacherDetails input according to GraphQL schema
             const teacherDetailsInput = {
                 education: Array.isArray(profile.education) ? JSON.stringify(profile.education) : profile.education,
-                experience: Array.isArray(profile.experience) ? JSON.stringify(profile.experience) : profile.experience,
+                experience: profile.experience.length, // Send total number of experience entries as years
                 subjects: profile.subjects ? profile.subjects.split(',').map(s => s.trim()).filter(s => s) : [],
                 certifications: [], // Not implemented yet
                 resume: resumeUrl

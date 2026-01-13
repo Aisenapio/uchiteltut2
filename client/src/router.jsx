@@ -74,7 +74,7 @@ const Router = () => {
 
               {/* Teacher Routes */}
               <Route path="teacher" element={<TeacherDashboardLayout />}>
-                <Route path="profile" element={<TeacherProfile />} />
+                <Route index element={<TeacherProfile />} />
                 <Route path="search" element={<JobSearch />} />
                 <Route path="responses" element={<MyResponses />} />
               </Route>
